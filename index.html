@@ -43,8 +43,10 @@ body { margin: 0; background-color: #f8fafc; overflow: hidden; -webkit-font-smoo
 .day-card { transition: all 0.15s ease; outline: none; }
 .day-card:focus, .day-card.focused { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4); transform: translateY(-2px); border-color: #3b82f6; z-index: 10; }
 .modal-overlay { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
-input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.2s; }
-input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.2s; }
+input[type="date"]::-webkit-calendar-picker-indicator:hover, input[type="time"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+.time-grid::-webkit-scrollbar { width: 6px; }
+.time-grid::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -52,14 +54,17 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 <script type="text/babel">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
-const DB_KEY = 'arise_modern_db_v5';
 const PWD_KEY = 'arise_sys_pwd';
 const SIG_KEY = 'arise_pdf_signatures'; 
-const DAYS = 31;
-const WEEKENDS = [3, 10, 17, 24, 31];
-const START_DAY_OFFSET = 4; 
+const MONTH_KEY = 'arise_active_month_v6';
+
+// Support for 2 Isolated Months Configuration
+const MONTHS = [
+    { id: 'MAY_2026', label: 'May 2026', short: 'MAY-26', days: 31, weekends: [3, 10, 17, 24, 31], startOffset: 4, dbKey: 'arise_modern_db_v5' },
+    { id: 'JUN_2026', label: 'June 2026', short: 'JUN-26', days: 30, weekends: [7, 14, 21, 28], startOffset: 0, dbKey: 'arise_modern_db_jun_26' }
+];
+
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const LABELS = ["Fri", "Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // Date Formatter Helper
 const formatDate = (dStr) => {
@@ -69,12 +74,43 @@ const formatDate = (dStr) => {
     return dStr;
 };
 
-const compute = (emp) => {
+// Time Options Generators
+const generateTimeOptions = (startHr, startMin, endHr, endMin) => {
+    const times = [];
+    let h = startHr, m = startMin;
+    while (h < endHr || (h === endHr && m <= endMin)) {
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+        const displayM = m.toString().padStart(2, '0');
+        times.push(`${displayH}:${displayM} ${ampm}`);
+        m += 5;
+        if (m >= 60) { m -= 60; h++; }
+    }
+    return times;
+};
+const inTimeOptions = generateTimeOptions(8, 30, 11, 0); // 8:30 AM to 11:00 AM
+const outTimeOptions = generateTimeOptions(16, 0, 21, 0); // 4:00 PM to 9:00 PM
+
+const SUGGESTED_IN_TIMES = ['9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM'];
+const SUGGESTED_OUT_TIMES = ['5:30 PM', '6:00 PM', '6:30 PM', '7:00 PM'];
+
+const formatTimeInput = (time24) => {
+    if(!time24) return "";
+    let [h, m] = time24.split(':');
+    h = parseInt(h, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${m} ${ampm}`;
+};
+
+// Dynamic Computation based on selected Month Configuration
+const compute = (emp, monthConf) => {
     let pr = 0, pOnly = 0, ab = 0, ot = 0, t = 0, wo = 0, h = 0, pMiss = 0;
     let autoWoDays = {};
     const isE = String(emp.type || "").trim().toUpperCase() === "E";
+    const { days, weekends } = monthConf;
 
-    for (let w of WEEKENDS) {
+    for (let w of weekends) {
         if (!emp[`d${w}`]) {
             let sum = 0;
             for (let i = Math.max(1, w - 6); i < w; i++) {
@@ -86,16 +122,17 @@ const compute = (emp) => {
         }
     }
 
-    for (let i = 1; i <= DAYS; i++) {
+    for (let i = 1; i <= days; i++) {
         const manual = String(emp[`d${i}`] || "").trim().toUpperCase();
         const a = manual || autoWoDays[i] || "";
-        const isSunday = WEEKENDS.includes(i);
+        const isSunday = weekends.includes(i);
         const o = String(emp[`ot${i}`] || "").trim();
 
         let getsExtraWo = false;
         if (isE && isSunday && manual && ['P', 'P?', 'H', '0.5', 'T'].includes(manual)) getsExtraWo = true;
 
-        if (a === "P" || a === "P?") { pr += 1; pOnly += 1; if(a === "P?") pMiss += 1; }
+        if (a === "P") { pr += 1; pOnly += 1; }
+        else if (a === "P?") { pr += 1; pOnly += 1; pMiss += 1; } 
         else if (a === "T") { pr += 1; t += 1; }
         else if (a === "W/O") { pr += 1; wo += 1; }
         else if (a === "0.5" || a === "H") { pr += 0.5; h += 1; }
@@ -108,10 +145,9 @@ const compute = (emp) => {
     const bas = parseFloat(emp.basicSalary) || 0;
     const pBal = parseFloat(emp.previousBalance) || 0;
     const adv = parseFloat(emp.advance) || 0;
-    const pd = bas > 0 ? bas / 31 : 0;
+    const pd = bas > 0 ? bas / days : 0;
     const ph = pd > 0 ? pd / 8.5 : 0;
     
-    // ROUNDED OFF CALCULATIONS
     const ms = Math.round(pr * pd);
     const dos = Math.round(ot * ph);
     const act = ms + dos;
@@ -127,10 +163,10 @@ const compute = (emp) => {
     };
 };
 
-const defaultEmp = () => {
+const defaultEmp = (monthConf) => {
     const e = { id: Date.now().toString(), name: "New Employee", dept: "PRODUCTION", code: `EMP-${Math.floor(Math.random()*1000)}`, type: "E", basicSalary: 0, previousBalance: 0, advance: 0, joiningDate: "" };
-    for (let i = 1; i <= DAYS; i++) { e[`d${i}`] = ""; e[`ot${i}`] = ""; e[`c${i}`] = ""; }
-    return compute(e);
+    for (let i = 1; i <= monthConf.days; i++) { e[`d${i}`] = ""; e[`ot${i}`] = ""; e[`c${i}`] = ""; e[`in${i}`] = ""; e[`out${i}`] = ""; }
+    return compute(e, monthConf);
 };
 
 const Icon = ({ path, className="w-5 h-5" }) => (
@@ -139,7 +175,7 @@ const Icon = ({ path, className="w-5 h-5" }) => (
 </svg>
 );
 
-const OwnerDashboard = ({ db }) => {
+const OwnerDashboard = ({ db, activeConf }) => {
     const stats = useMemo(() => {
         let totalBasic = 0, totalEarned = 0, totalPayout = 0, totalAdvance = 0, totalOTCost = 0, totalOTHours = 0;
         let totalAbsent = 0, totalPresent = 0, totalMissingPunches = 0;
@@ -167,29 +203,29 @@ const OwnerDashboard = ({ db }) => {
             }
         });
 
-        const expectedDays = db.length * DAYS;
+        const expectedDays = db.length * activeConf.days;
         const attRate = expectedDays ? ((totalPresent / expectedDays) * 100).toFixed(1) : 0;
         const sortedDepts = Object.entries(deptCosts).sort((a,b) => b[1] - a[1]);
 
         const insights = [];
         if (attRate < 85 && db.length > 0) insights.push({ type: 'warning', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', title: 'High Absenteeism Rate', msg: `Overall attendance is at ${attRate}%. Consider reviewing leave patterns or issues affecting the workforce.` });
         if (totalOTCost > (totalBasic * 0.15) && db.length > 0) insights.push({ type: 'error', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200', title: 'Excessive Overtime Costs', msg: `OT accounts for >15% of basic payroll (₹${totalOTCost.toLocaleString(undefined, {maximumFractionDigits:0})}). Consider adjusting shift timings to reduce burnout.` });
-        if (totalMissingPunches > (db.length * 1.5) && db.length > 0) insights.push({ type: 'info', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200', title: 'Frequent Missing Punches', msg: `Detected ${totalMissingPunches} missing punch-outs (P?). Enforce stricter punch rules to save calculation time.` });
-        if (totalAdvance > (totalEarned * 0.2) && db.length > 0) insights.push({ type: 'warning', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', title: 'High Advance Dependency', msg: 'Employees have requested over 20% of their earned salaries as advance payments. Review company loan policies.' });
+        if (totalMissingPunches > (db.length * 1.5) && db.length > 0) insights.push({ type: 'info', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200', title: 'Frequent Missing Punches', msg: `Detected ${totalMissingPunches} missing punch-outs (P?). Enforce stricter punch rules.` });
+        if (totalAdvance > (totalEarned * 0.2) && db.length > 0) insights.push({ type: 'warning', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', title: 'High Advance Dependency', msg: 'Employees have requested over 20% of their earned salaries as advance payments. Review loan policies.' });
         if (insights.length === 0 && db.length > 0) insights.push({ type: 'success', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', title: 'System Healthy', msg: 'Payroll and attendance metrics are well within healthy operational thresholds. No critical actions required.' });
 
         const topAbsent = [...db].sort((a, b) => (parseFloat(b.absent)||0) - (parseFloat(a.absent)||0)).slice(0, 5).filter(e => e.absent > 0);
         const topOT = [...db].sort((a, b) => (parseFloat(b.otHrs)||0) - (parseFloat(a.otHrs)||0)).slice(0, 5).filter(e => e.otHrs > 0);
 
         return { totalBasic, totalPayout, totalAdvance, totalOTCost, totalOTHours, totalAbsent, attRate, sortedDepts, insights, topAbsent, topOT, newJoiners };
-    }, [db]);
+    }, [db, activeConf]);
 
     return (
         <div className="flex-1 overflow-y-auto p-8 hide-scroll bg-slate-50 flex flex-col gap-6">
             <div className="flex justify-between items-end mb-2">
                 <div>
                     <h2 className="text-3xl font-black text-slate-900 tracking-tight">Executive Analytics</h2>
-                    <p className="text-sm font-semibold text-slate-500 mt-1">Detailed financial and operational overview for management.</p>
+                    <p className="text-sm font-semibold text-slate-500 mt-1">Detailed financial and operational overview for {activeConf.label}.</p>
                 </div>
                 <div className="text-xs font-bold text-slate-400 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -245,7 +281,7 @@ const OwnerDashboard = ({ db }) => {
 
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none"><Icon path="M13 10V3L4 14h7v7l9-11h-7z" className="w-32 h-32"/></div>
-                <h3 className="text-lg font-black text-slate-800 mb-5 flex items-center gap-2 relative z-10"><Icon path="M13 10V3L4 14h7v7l9-11h-7z" className="text-brand-500"/> System Insights & Owner Recommendations</h3>
+                <h3 className="text-lg font-black text-slate-800 mb-5 flex items-center gap-2 relative z-10"><Icon path="M13 10V3L4 14h7v7l9-11h-7z" className="text-brand-500"/> System Insights & Recommendations</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
                     {stats.insights.length === 0 ? (
                         <div className="col-span-2 text-sm text-slate-400 font-medium p-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">Not enough data to generate insights yet.</div>
@@ -377,11 +413,40 @@ const [auth, setAuth] = useState(() => {
 });
 const [passInput, setPassInput] = useState("");
 
-const [db, setDb] = useState(() => {
-    const saved = localStorage.getItem(DB_KEY);
-    if (saved) { try { return JSON.parse(saved).map(compute); } catch(e){ return []; } }
-    return [];
+// Multi-Month DB Architecture
+const [activeMonthKey, setActiveMonthKey] = useState(() => localStorage.getItem(MONTH_KEY) || MONTHS[0].id);
+
+const [dbs, setDbs] = useState(() => {
+    const loaded = {};
+    MONTHS.forEach(m => {
+        const saved = localStorage.getItem(m.dbKey);
+        if (saved) { 
+            try { loaded[m.id] = JSON.parse(saved).map(e => compute(e, m)); } 
+            catch(e){ loaded[m.id] = []; } 
+        } else {
+            loaded[m.id] = [];
+        }
+    });
+    return loaded;
 });
+
+const activeConf = useMemo(() => MONTHS.find(m => m.id === activeMonthKey), [activeMonthKey]);
+const db = useMemo(() => dbs[activeMonthKey] || [], [dbs, activeMonthKey]);
+
+// Effect hooks for persistence
+useEffect(() => { localStorage.setItem(MONTH_KEY, activeMonthKey); }, [activeMonthKey]);
+useEffect(() => { 
+    MONTHS.forEach(m => {
+        localStorage.setItem(m.dbKey, JSON.stringify(dbs[m.id]));
+    });
+}, [dbs]);
+
+const setDb = useCallback((newDbOrFn) => {
+    setDbs(prev => {
+        const updated = typeof newDbOrFn === 'function' ? newDbOrFn(prev[activeMonthKey]) : newDbOrFn;
+        return { ...prev, [activeMonthKey]: updated };
+    });
+}, [activeMonthKey]);
 
 const [activeTab, setActiveTab] = useState("employees");
 const [logDate, setLogDate] = useState(1);
@@ -391,6 +456,8 @@ const [focusDay, setFocusDay] = useState(null);
 const [otModal, setOtModal] = useState({ show: false, day: null, val: "" });
 const [commentModal, setCommentModal] = useState({ show: false, day: null, val: "" });
 const [pdfModal, setPdfModal] = useState({ show: false, hideBasic: false }); 
+const [timeModal, setTimeModal] = useState({ show: false, day: null, step: 'in', inVal: '', outVal: '', custom: '' });
+
 const [pdfSigs, setPdfSigs] = useState(() => {
     const saved = localStorage.getItem(SIG_KEY);
     if (saved) return JSON.parse(saved);
@@ -402,7 +469,6 @@ const fileRef = useRef(null);
 const otInputRef = useRef(null);
 const commentInputRef = useRef(null);
 
-useEffect(() => { localStorage.setItem(DB_KEY, JSON.stringify(db)); }, [db]);
 useEffect(() => { localStorage.setItem(SIG_KEY, JSON.stringify(pdfSigs)); }, [pdfSigs]); 
 useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); } }, [toast]);
 useEffect(() => { if (otModal.show && otInputRef.current) { otInputRef.current.focus(); otInputRef.current.select(); } }, [otModal.show]);
@@ -411,6 +477,7 @@ useEffect(() => { if (commentModal.show && commentInputRef.current) { commentInp
 useEffect(() => {
     const handleGlobalEsc = (e) => {
         if (e.key === 'Escape') {
+            if (timeModal.show) { setTimeModal(prev => ({...prev, show: false})); return; }
             if (otModal.show) { setOtModal(prev => ({...prev, show: false})); return; }
             if (commentModal.show) { setCommentModal(prev => ({...prev, show: false})); return; }
             if (pdfModal.show) { setPdfModal(prev => ({...prev, show: false})); return; }
@@ -419,7 +486,7 @@ useEffect(() => {
     };
     window.addEventListener('keydown', handleGlobalEsc);
     return () => window.removeEventListener('keydown', handleGlobalEsc);
-}, [otModal.show, commentModal.show, pdfModal.show, activeTab]);
+}, [otModal.show, commentModal.show, pdfModal.show, timeModal.show, activeTab]);
 
 const notify = (msg, type="success") => setToast({ msg, type });
 
@@ -456,11 +523,17 @@ const handleImport = (e) => {
                     const n = String(row[1] || "").trim();
                     if (n && !["employee name", "department", "prepared by", "total due", "recheck by"].some(x => n.toLowerCase().includes(x))) {
                         const em = { id: Math.random().toString(36).substr(2, 9), srNo: String(row[0]||"").trim(), name: n, dept: String(row[2]||"").trim(), code: String(row[3]||"").trim() || `C-${i}`, type: String(row[4]||"").trim(), basicSalary: parseFloat(row[67]) || 0, previousBalance: parseFloat(row[80]) || 0, advance: parseFloat(row[82]) || 0, joiningDate: "" };
-                        for (let d = 1; d <= DAYS; d++) { em[`d${d}`] = String(row[5+(d-1)*2]||"").trim(); em[`ot${d}`] = String(row[6+(d-1)*2]||"").trim(); em[`c${d}`] = ""; }
-                        parsed.push(compute(em));
+                        for (let d = 1; d <= activeConf.days; d++) { 
+                            em[`d${d}`] = String(row[5+(d-1)*2]||"").trim(); 
+                            em[`ot${d}`] = String(row[6+(d-1)*2]||"").trim(); 
+                            em[`c${d}`] = "";
+                            em[`in${d}`] = "";
+                            em[`out${d}`] = "";
+                        }
+                        parsed.push(compute(em, activeConf));
                     }
                 }
-                if (parsed.length > 0) { setDb(parsed); notify(`Imported ${parsed.length} records`); } else notify("No valid data", "error");
+                if (parsed.length > 0) { setDb(parsed); notify(`Imported ${parsed.length} records into ${activeConf.label}`); } else notify("No valid data", "error");
             } catch (err) { notify("Parse error", "error"); }
             if (fileRef.current) fileRef.current.value = "";
         }
@@ -486,15 +559,15 @@ const handleExportExcel = () => {
 
         const aoa = [];
         aoa.push([ { v: "Arise Construction Equipments", t: "s", s: { font: { bold: true, sz: 14 } } } ]);
-        aoa.push([ { v: "Attendance Sheet - MAY 2026", t: "s", s: { font: { bold: true, sz: 12 } } } ]);
+        aoa.push([ { v: `Attendance Sheet - ${activeConf.label.toUpperCase()}`, t: "s", s: { font: { bold: true, sz: 12 } } } ]);
 
         const head1 = [
             cell("Sr. No.", CLR_LIGHTGRAY, true), cell("Employee Name", CLR_LIGHTGRAY, true, "left"),
             cell("DEPARTMENT", CLR_LIGHTGRAY, true), cell("CODE", CLR_BLUE, true), cell("TYPE", CLR_LIGHTGRAY, true)
         ];
 
-        for (let i = 1; i <= DAYS; i++) {
-            const isWk = WEEKENDS.includes(i);
+        for (let i = 1; i <= activeConf.days; i++) {
+            const isWk = activeConf.weekends.includes(i);
             head1.push(cell(String(i).padStart(2, '0'), isWk ? CLR_YELLOW : CLR_LIGHTGRAY, true));
             head1.push(cell("", isWk ? CLR_YELLOW : CLR_LIGHTGRAY, true)); 
         }
@@ -506,9 +579,10 @@ const handleExportExcel = () => {
         const head2 = [
             cell("", CLR_LIGHTGRAY, true), cell("", CLR_LIGHTGRAY, true), cell("", CLR_LIGHTGRAY, true), cell("", CLR_BLUE, true), cell("", CLR_LIGHTGRAY, true)
         ];
-        for (let i = 1; i <= DAYS; i++) {
-            const isWk = WEEKENDS.includes(i);
-            head2.push(cell(LABELS[i-1], isWk ? CLR_YELLOW : CLR_LIGHTGRAY, true));
+        
+        for (let i = 1; i <= activeConf.days; i++) {
+            const isWk = activeConf.weekends.includes(i);
+            head2.push(cell(DAY_NAMES[(activeConf.startOffset + i - 1) % 7], isWk ? CLR_YELLOW : CLR_LIGHTGRAY, true));
             head2.push(cell("OT", isWk ? CLR_YELLOW : CLR_LIGHTGRAY, true)); 
         }
         pHeaders.forEach(ph => head2.push(cell("", ph.includes("Actual") || ph.includes("Salary To Be Paid") ? CLR_YELLOW : CLR_LIGHTGRAY, true)));
@@ -519,7 +593,28 @@ const handleExportExcel = () => {
             if (c >= 26) colName = String.fromCharCode(64 + Math.floor(c/26)) + colName;
             return colName;
         };
-        const sunCols = WEEKENDS.map(d => getColName(5 + (d-1)*2)); 
+        const sunCols = activeConf.weekends.map(d => getColName(5 + (d-1)*2)); 
+
+        const baseIdx = 5 + activeConf.days * 2;
+        const colBasic = getColName(baseIdx);
+        const colP = getColName(baseIdx + 1);
+        const colWO = getColName(baseIdx + 2);
+        const colT = getColName(baseIdx + 3);
+        const colWkDays = getColName(baseIdx + 4);
+        const colAbs = getColName(baseIdx + 5);
+        const colOT = getColName(baseIdx + 6);
+        const colTotDays = getColName(baseIdx + 7);
+        const colPerDay = getColName(baseIdx + 8);
+        const colPerHr = getColName(baseIdx + 9);
+        const colMonSal = getColName(baseIdx + 10);
+        const colOtSal = getColName(baseIdx + 11);
+        const colActSal = getColName(baseIdx + 12);
+        const colPrev = getColName(baseIdx + 13);
+        const colSalPrev = getColName(baseIdx + 14);
+        const colAdv = getColName(baseIdx + 15);
+        const colSalPay = getColName(baseIdx + 16);
+
+        const endAttColName = getColName(4 + activeConf.days * 2);
 
         db.forEach((emp, index) => {
             const R = index + 5; 
@@ -527,42 +622,42 @@ const handleExportExcel = () => {
                 cell(emp.srNo || index + 1, null, true), cell(emp.name, null, true, "left"), cell(emp.dept, null, false), cell(emp.code, null, true), cell(emp.type, null, false)
             ];
 
-            for (let i = 1; i <= DAYS; i++) {
-                const isWk = WEEKENDS.includes(i);
+            for (let i = 1; i <= activeConf.days; i++) {
+                const isWk = activeConf.weekends.includes(i);
                 const bg = isWk ? CLR_YELLOW : null;
-                const ot = emp[`ot${i}`];
-                const aVal = emp[`d${i}`] ? String(emp[`d${i}`]).toUpperCase() : (emp.autoWoDays?.[i] || "");
+                const manual = String(emp[`d${i}`] || "").trim().toUpperCase();
+                const aVal = manual || (emp.autoWoDays?.[i] || "");
                 row.push(cell(aVal, bg, false));
-                
-                const otC = cell(ot, bg, false);
-                if (ot && parseFloat(ot) < 0) otC.s.font = { color: { rgb: "FF0000" }, bold: true };
-                else if (ot) otC.s.font = { color: { rgb: "0000FF" }, bold: true };
+                const otRaw = String(emp[`ot${i}`] || "").trim();
+                const otVal = (otRaw !== "" && !isNaN(otRaw)) ? parseFloat(otRaw) : "";
+                const otC = cell(otVal, bg, false);
+                if (otVal !== "" && otVal < 0) otC.s.font = { color: { rgb: "FF0000" }, bold: true };
+                else if (otVal !== "" && otVal > 0) otC.s.font = { color: { rgb: "0000FF" }, bold: true };
                 row.push(otC);
             }
 
-            const attRange = `F${R}:BN${R}`;
-            const extraWoFormula = sunCols.map(col => `IF(OR(${col}${R}="P", ${col}${R}="P~?", ${col}${R}="H", ${col}${R}="0.5", ${col}${R}="T"), 1, 0)`).join("+");
+            const attRange = `F${R}:${endAttColName}${R}`;
+            const extraWoFormula = sunCols.length ? sunCols.map(col => `IF(OR(${col}${R}="P", ${col}${R}="P?", ${col}${R}="H", ${col}${R}="0.5", ${col}${R}="T"), 1, 0)`).join("+") : "0";
 
             row.push(
-                cell(emp.basicSalary || 0, null, true),
+                cell(parseFloat(emp.basicSalary) || 0, null, true),
                 cell(`COUNTIF(${attRange},"P")+COUNTIF(${attRange},"P~?")+COUNTIF(${attRange},"H")*0.5+COUNTIF(${attRange},"0.5")*0.5`, null, true, "center", true),
                 cell(`COUNTIF(${attRange},"W/O") + IF(UPPER(E${R})="E", ${extraWoFormula}, 0)`, null, false, "center", true),
                 cell(`COUNTIF(${attRange},"T")`, null, false, "center", true),
-                cell(`BQ${R}+BR${R}+BS${R}`, null, true, "center", true),
+                cell(`${colP}${R}+${colWO}${R}+${colT}${R}`, null, true, "center", true),
                 cell(`COUNTIF(${attRange},"A")`, null, true, "center", true),
-                cell(`SUMIF(F$4:BO$4,"OT",F${R}:BO${R})`, null, true, "center", true),
-                cell(31, null, false),
-                cell(`IF(BW${R}>0, BP${R}/BW${R}, 0)`, null, false, "center", true),
-                cell(`IF(BX${R}>0, BX${R}/8.5, 0)`, null, false, "center", true),
-                cell(`ROUND(BT${R}*BX${R}, 0)`, null, false, "center", true),
-                cell(`ROUND(BV${R}*BY${R}, 0)`, null, false, "center", true),
-                cell(`ROUND(BZ${R}+CA${R}, 0)`, CLR_YELLOW, true, "center", true),
-                cell(emp.previousBalance || 0, null, false),
-                cell(`ROUND(CB${R}+CC${R}, 0)`, null, false, "center", true),
-                cell(emp.advance || 0, null, false),
-                cell(`ROUND(CD${R}-CE${R}, 0)`, CLR_YELLOW, true, "center", true),
-                cell("", null, false),
-                cell("", null, false)
+                cell(`SUMIF(F$4:${endAttColName}$4,"OT",F${R}:${endAttColName}${R})`, null, true, "center", true),
+                cell(activeConf.days, null, false),
+                cell(`IF(${colTotDays}${R}>0, ${colBasic}${R}/${colTotDays}${R}, 0)`, null, false, "center", true),
+                cell(`IF(${colPerDay}${R}>0, ${colPerDay}${R}/8.5, 0)`, null, false, "center", true),
+                cell(`ROUND(${colWkDays}${R}*${colPerDay}${R}, 0)`, null, false, "center", true),
+                cell(`ROUND(${colOT}${R}*${colPerHr}${R}, 0)`, null, false, "center", true),
+                cell(`ROUND(${colMonSal}${R}+${colOtSal}${R}, 0)`, CLR_YELLOW, true, "center", true),
+                cell(parseFloat(emp.previousBalance) || 0, null, false),
+                cell(`ROUND(${colActSal}${R}+${colPrev}${R}, 0)`, null, false, "center", true),
+                cell(parseFloat(emp.advance) || 0, null, false),
+                cell(`ROUND(${colSalPrev}${R}-${colAdv}${R}, 0)`, CLR_YELLOW, true, "center", true),
+                cell("", null, false), cell("", null, false)
             );
             aoa.push(row);
         });
@@ -571,21 +666,164 @@ const handleExportExcel = () => {
         const merges = [];
         for (let i = 0; i < 5; i++) merges.push({ s: { r: 2, c: i }, e: { r: 3, c: i } });
         let col = 5;
-        for (let i = 1; i <= DAYS; i++) { merges.push({ s: { r: 2, c: col }, e: { r: 2, c: col + 1 } }); col += 2; }
+        for (let i = 1; i <= activeConf.days; i++) { merges.push({ s: { r: 2, c: col }, e: { r: 2, c: col + 1 } }); col += 2; }
         for (let i = col; i < col + pHeaders.length; i++) merges.push({ s: { r: 2, c: i }, e: { r: 3, c: i } });
         ws['!merges'] = merges;
+        
         const cols = [{ wch: 6 }, { wch: 22 }, { wch: 14 }, { wch: 10 }, { wch: 6 }];
-        for (let i = 0; i < DAYS; i++) { cols.push({ wch: 3.5 }); cols.push({ wch: 3.5 }); }
+        for (let i = 0; i < activeConf.days; i++) { cols.push({ wch: 4.5 }); cols.push({ wch: 4.5 }); } 
         pHeaders.forEach(() => cols.push({ wch: 12 }));
         ws['!cols'] = cols;
 
-        XLSX.utils.book_append_sheet(wb, ws, "MAY-26");
-        XLSX.writeFile(wb, "Arise_Attendance_May_2026.xlsx");
+        XLSX.utils.book_append_sheet(wb, ws, activeConf.short);
+        XLSX.writeFile(wb, `Arise_Attendance_${activeConf.short}.xlsx`);
         notify("Formula-based Excel Exported!", "success");
     } catch(err) { notify("Failed to export Excel", "error"); console.error(err); }
 };
 
-const executePDFExport = () => {
+// NEW EXPORT: Special In/Out Excel format
+const handleExportInOutExcel = () => {
+    if (db.length === 0) { notify("No data to export", "error"); return; }
+    try {
+        const wb = XLSX.utils.book_new();
+        const aoa = [];
+
+        // Colors based on requested layout
+        const CLR_HEADER = { rgb: "203780" }; // Dark Blue
+        const CLR_WHITE = { rgb: "FFFFFF" };
+        const CLR_WEEKEND = { rgb: "D9EAD3" }; // Light Green
+
+        const BORDER_TOP = { top: { style: "thin", color: { rgb: "000000" } } };
+        const BORDER_BOTTOM = { bottom: { style: "thin", color: { rgb: "000000" } } };
+        const BORDER_LEFT = { left: { style: "thin", color: { rgb: "000000" } } };
+        const BORDER_RIGHT = { right: { style: "thin", color: { rgb: "000000" } } };
+        const BORDER_DOTTED_BOTTOM = { bottom: { style: "dotted", color: { rgb: "888888" } } };
+        const BORDER_DOTTED_TOP = { top: { style: "dotted", color: { rgb: "888888" } } };
+
+        const BORDER_FULL = { ...BORDER_TOP, ...BORDER_BOTTOM, ...BORDER_LEFT, ...BORDER_RIGHT };
+        
+        // Borders for split rows
+        const BORDER_IN_ROW = { ...BORDER_TOP, ...BORDER_LEFT, ...BORDER_RIGHT, ...BORDER_DOTTED_BOTTOM };
+        const BORDER_OUT_ROW = { ...BORDER_LEFT, ...BORDER_RIGHT, ...BORDER_BOTTOM, ...BORDER_DOTTED_TOP };
+
+        const cell = (val, bg, bold, align = "center", txtColor = null, customBorder = null) => {
+            const style = { alignment: { horizontal: align, vertical: "center", wrapText: true } };
+            style.border = customBorder || BORDER_FULL;
+            if (bg) style.fill = { fgColor: bg };
+            if (bold || txtColor) {
+                style.font = {};
+                if (bold) style.font.bold = true;
+                if (txtColor) style.font.color = txtColor;
+            }
+            return { v: val === undefined || val === null ? "" : val, t: "s", s: style };
+        };
+
+        const totalCols = 2 + activeConf.days; // Sr, Name, Days 1..N
+        const merges = [];
+
+        // Row 1: Company Name
+        const row1 = [ { v: "ARISE CONSTRUCTION EQUIPMENT", t: "s", s: { alignment: { horizontal: "center", vertical: "center" }, font: { bold: true, sz: 16, color: CLR_WHITE }, fill: { fgColor: CLR_HEADER } } } ];
+        for(let i=1; i<totalCols; i++) row1.push("");
+        aoa.push(row1);
+        merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } });
+
+        // Row 2: Subtitle
+        const row2 = [ { v: `MONTHLY ATTENDANCE REGISTER | ${activeConf.label.toUpperCase()}`, t: "s", s: { alignment: { horizontal: "center", vertical: "center" }, font: { sz: 10, color: CLR_WHITE }, fill: { fgColor: CLR_HEADER } } } ];
+        for(let i=1; i<totalCols; i++) row2.push("");
+        aoa.push(row2);
+        merges.push({ s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } });
+
+        // Row 3: Day Numbers & Names
+        const row3 = [
+            cell("#", CLR_HEADER, true, "center", CLR_WHITE),
+            cell("Employee Name", CLR_HEADER, true, "center", CLR_WHITE)
+        ];
+        for (let i = 1; i <= activeConf.days; i++) {
+            const isWk = activeConf.weekends.includes(i);
+            const dayName = DAY_NAMES[(activeConf.startOffset + i - 1) % 7].substring(0, 2);
+            row3.push(cell(`${i}\n${dayName}`, isWk ? CLR_WEEKEND : CLR_HEADER, true, "center", isWk ? {rgb:"000000"} : CLR_WHITE));
+        }
+        aoa.push(row3);
+
+        // Row 4: IN / OUT headers
+        const row4 = [
+            cell("", CLR_HEADER, true, "center", CLR_WHITE),
+            cell("", CLR_HEADER, true, "center", CLR_WHITE)
+        ];
+        for (let i = 1; i <= activeConf.days; i++) {
+            const isWk = activeConf.weekends.includes(i);
+            row4.push(cell("IN / OUT", isWk ? CLR_WEEKEND : CLR_HEADER, false, "center", isWk ? {rgb:"000000"} : CLR_WHITE));
+        }
+        aoa.push(row4);
+        
+        // Merge Sr and Name down to row 4
+        merges.push({ s: { r: 2, c: 0 }, e: { r: 3, c: 0 } });
+        merges.push({ s: { r: 2, c: 1 }, e: { r: 3, c: 1 } });
+
+        // Data Rows
+        db.forEach((emp, index) => {
+            const rIn = [], rOut = [];
+            const rBase = aoa.length;
+            
+            // # and Name (will be merged vertically)
+            rIn.push(cell(index + 1, null, true, "center", null, BORDER_IN_ROW));
+            rIn.push(cell(emp.name, null, true, "left", null, BORDER_IN_ROW));
+            rOut.push(cell("", null, false, "center", null, BORDER_OUT_ROW));
+            rOut.push(cell("", null, false, "left", null, BORDER_OUT_ROW));
+
+            for (let i = 1; i <= activeConf.days; i++) {
+                const isWk = activeConf.weekends.includes(i);
+                const bg = isWk ? CLR_WEEKEND : null;
+                
+                const inTime = emp[`in${i}`] || "";
+                const outTime = emp[`out${i}`] || "";
+                
+                // If it's W/O, absent, or no time logged but marked, show the status in the top cell
+                let inDisplay = inTime;
+                let outDisplay = outTime;
+                
+                if (!inTime && !outTime) {
+                    const status = String(emp[`d${i}`] || "").trim().toUpperCase();
+                    if (status && status !== 'P') {
+                        inDisplay = status; // Show 'A', 'H', 'W/O' etc.
+                    }
+                }
+
+                rIn.push(cell(inDisplay, bg, false, "center", null, BORDER_IN_ROW));
+                rOut.push(cell(outDisplay, bg, false, "center", null, BORDER_OUT_ROW));
+            }
+
+            aoa.push(rIn);
+            aoa.push(rOut);
+
+            // Merge # and Name
+            merges.push({ s: { r: rBase, c: 0 }, e: { r: rBase + 1, c: 0 } });
+            merges.push({ s: { r: rBase, c: 1 }, e: { r: rBase + 1, c: 1 } });
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        ws['!merges'] = merges;
+        
+        // Column widths
+        const cols = [{ wch: 5 }, { wch: 25 }];
+        for (let i = 0; i < activeConf.days; i++) cols.push({ wch: 9 });
+        ws['!cols'] = cols;
+        
+        // Row heights
+        const rows = [{ hpt: 35 }, { hpt: 20 }, { hpt: 30 }, { hpt: 15 }];
+        for(let i=0; i<db.length; i++){
+            rows.push({ hpt: 18 }); // IN row
+            rows.push({ hpt: 18 }); // OUT row
+        }
+        ws['!rows'] = rows;
+
+        XLSX.utils.book_append_sheet(wb, ws, "IN_OUT_Log");
+        XLSX.writeFile(wb, `Arise_IN_OUT_Check_${activeConf.short}.xlsx`);
+        notify("IN/OUT Time Excel Exported!", "success");
+    } catch(err) { notify("Failed to export Excel", "error"); console.error(err); }
+};
+
+const executePDFExport = () => {  
     const hideBasic = pdfModal.hideBasic;
     setPdfModal({ ...pdfModal, show: false });
 
@@ -604,13 +842,13 @@ const executePDFExport = () => {
             const basic = parseFloat(e.basicSalary) || 0;
             const days = parseFloat(e.workingDays) || 0;
             const adv = parseFloat(e.advance) || 0;
-            const net = Math.max(0, parseFloat(e.salaryToBePaid) || 0);
+            const net = parseFloat(e.salaryToBePaid) || 0; 
 
             tBasic += basic;
             tDays += days;
             tAdv += adv;
             tNet += net;
-            tP += (parseFloat(e.pOnly) || 0);
+            tP += (parseFloat(e.pOnly) || 0); 
             tWO += (parseFloat(e.wo) || 0);
             tH += (parseFloat(e.half) || 0);
             tPMiss += (parseFloat(e.pMiss) || 0);
@@ -634,50 +872,20 @@ const executePDFExport = () => {
         
         doc.setFontSize(11);
         doc.setTextColor(60, 60, 60);
-        doc.text("Payroll & Attendance Verification Dashboard - MAY 2026", 105, 22, { align: 'center' });
+        doc.text(`Payroll & Attendance Verification Dashboard - ${activeConf.label.toUpperCase()}`, 105, 22, { align: 'center' });
 
         doc.setFillColor(235, 235, 235);
         if (hideBasic) {
-            doc.rect(35.5, 28, 43, 16, 'F');
-            doc.setFillColor(230, 240, 255);
-            doc.rect(83.5, 28, 43, 16, 'F');
-            doc.setFillColor(235, 235, 235);
-            doc.rect(131.5, 28, 43, 16, 'F');
-
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(9);
-            doc.setTextColor(80, 80, 80);
-            doc.text("Total Working Days", 57, 34, { align: 'center' });
-            doc.text("Total Advance", 105, 34, { align: 'center' });
-            doc.text("Net Salary To Be Paid", 153, 34, { align: 'center' });
-
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(11);
-            doc.setTextColor(15, 61, 129); doc.text(`${tDays}`, 57, 41, { align: 'center' });
-            doc.setTextColor(180, 0, 0); doc.text(`Rs. ${Math.round(tAdv).toLocaleString()}`, 105, 41, { align: 'center' });
-            doc.setTextColor(0, 128, 0); doc.text(`Rs. ${Math.round(tNet).toLocaleString()}`, 153, 41, { align: 'center' });
+            doc.rect(35.5, 28, 43, 16, 'F'); doc.setFillColor(230, 240, 255); doc.rect(83.5, 28, 43, 16, 'F'); doc.setFillColor(235, 235, 235); doc.rect(131.5, 28, 43, 16, 'F');
+            doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(80, 80, 80);
+            doc.text("Total Working Days", 57, 34, { align: 'center' }); doc.text("Total Advance", 105, 34, { align: 'center' }); doc.text("Net Salary To Be Paid", 153, 34, { align: 'center' });
+            doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(15, 61, 129); doc.text(`${tDays}`, 57, 41, { align: 'center' }); doc.setTextColor(180, 0, 0); doc.text(`Rs. ${Math.round(tAdv).toLocaleString()}`, 105, 41, { align: 'center' }); doc.setTextColor(0, 128, 0); doc.text(`Rs. ${Math.round(tNet).toLocaleString()}`, 153, 41, { align: 'center' });
         } else {
-            doc.rect(14, 28, 43, 16, 'F');
-            doc.setFillColor(230, 240, 255);
-            doc.rect(60, 28, 43, 16, 'F');
-            doc.setFillColor(235, 235, 235); 
-            doc.rect(106, 28, 43, 16, 'F');
-            doc.rect(152, 28, 43, 16, 'F');
-
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(9);
-            doc.setTextColor(80, 80, 80);
-            doc.text("Total Basic Salary", 35.5, 34, { align: 'center' });
-            doc.text("Total Working Days", 81.5, 34, { align: 'center' });
-            doc.text("Total Advance", 127.5, 34, { align: 'center' });
-            doc.text("Net Salary To Be Paid", 173.5, 34, { align: 'center' });
-
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(11);
-            doc.setTextColor(15, 61, 129); doc.text(`Rs. ${Math.round(tBasic).toLocaleString()}`, 35.5, 41, { align: 'center' });
-            doc.setTextColor(15, 61, 129); doc.text(`${tDays}`, 81.5, 41, { align: 'center' });
-            doc.setTextColor(180, 0, 0); doc.text(`Rs. ${Math.round(tAdv).toLocaleString()}`, 127.5, 41, { align: 'center' });
-            doc.setTextColor(0, 128, 0); doc.text(`Rs. ${Math.round(tNet).toLocaleString()}`, 173.5, 41, { align: 'center' });
+            doc.rect(14, 28, 43, 16, 'F'); doc.setFillColor(230, 240, 255); doc.rect(60, 28, 43, 16, 'F'); doc.setFillColor(235, 235, 235); doc.rect(106, 28, 43, 16, 'F'); doc.rect(152, 28, 43, 16, 'F');
+            doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(80, 80, 80);
+            doc.text("Total Basic Salary", 35.5, 34, { align: 'center' }); doc.text("Total Working Days", 81.5, 34, { align: 'center' }); doc.text("Total Advance", 127.5, 34, { align: 'center' }); doc.text("Net Salary To Be Paid", 173.5, 34, { align: 'center' });
+            doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+            doc.setTextColor(15, 61, 129); doc.text(`Rs. ${Math.round(tBasic).toLocaleString()}`, 35.5, 41, { align: 'center' }); doc.text(`${tDays}`, 81.5, 41, { align: 'center' }); doc.setTextColor(180, 0, 0); doc.text(`Rs. ${Math.round(tAdv).toLocaleString()}`, 127.5, 41, { align: 'center' }); doc.setTextColor(0, 128, 0); doc.text(`Rs. ${Math.round(tNet).toLocaleString()}`, 173.5, 41, { align: 'center' });
         }
 
         const head = [['S.No', 'Employee Name', 'Department']];
@@ -685,226 +893,155 @@ const executePDFExport = () => {
         head[0].push('P', 'W/O', 'H', 'P?', 'T', 'Days', 'Hrs\n(OT)', 'Advance', 'Salary To Pay');
 
         const tableData = db.map((e, index) => {
-            const netPay = Math.max(0, parseFloat(e.salaryToBePaid) || 0);
+            const netPay = parseFloat(e.salaryToBePaid) || 0; 
             const row = [ index + 1, e.name, e.dept || '-' ];
             if (!hideBasic) row.push(e.basicSalary ? `Rs. ${Math.round(parseFloat(e.basicSalary)).toLocaleString()}` : '-');
-            
-            row.push(
-                e.pOnly || '-', e.wo || '-', e.half || '-', e.pMiss || '-', e.tour || '-', e.workingDays || '-', e.otHrs || '-',
-                e.advance ? `Rs. ${Math.round(parseFloat(e.advance)).toLocaleString()}` : '-',
-                netPay ? `Rs. ${Math.round(netPay).toLocaleString()}` : '-'
-            );
+            row.push(e.pOnly || '-', e.wo || '-', e.half || '-', e.pMiss || '-', e.tour || '-', e.workingDays || '-', e.otHrs || '-', e.advance ? `Rs. ${Math.round(parseFloat(e.advance)).toLocaleString()}` : '-', netPay ? `Rs. ${Math.round(netPay).toLocaleString()}` : '0');
             return row;
         });
 
         const grandTotalRow = ["", "GRAND TOTAL", ""];
         if (!hideBasic) grandTotalRow.push(`Rs. ${Math.round(tBasic).toLocaleString()}`);
-        grandTotalRow.push(
-            tP || '-', tWO || '-', tH || '-', tPMiss || '-', tT || '-', tDays, tOT || '-',
-            `Rs. ${Math.round(tAdv).toLocaleString()}`, `Rs. ${Math.round(tNet).toLocaleString()}`
-        );
+        grandTotalRow.push(tP || '-', tWO || '-', tH || '-', tPMiss || '-', tT || '-', tDays, tOT || '-', `Rs. ${Math.round(tAdv).toLocaleString()}`, `Rs. ${Math.round(tNet).toLocaleString()}`);
         tableData.push(grandTotalRow);
 
         const advColIndex = hideBasic ? 10 : 11;
         const netColIndex = hideBasic ? 11 : 12;
 
-        // 1. Draw Main Employee Table
         doc.autoTable({
-            startY: 48,
-            head: head,
-            body: tableData,
-            theme: 'grid',
-            headStyles: { fillColor: [15, 61, 129], textColor: [255, 255, 255], halign: 'center', valign: 'middle', fontSize: 8 },
-            styles: { fontSize: 7.5, cellPadding: 1.5, halign: 'center', valign: 'middle' },
-            columnStyles: { 1: { halign: 'left' }, 2: { halign: 'left' } },
+            startY: 48, head: head, body: tableData, theme: 'grid', headStyles: { fillColor: [15, 61, 129], textColor: [255, 255, 255], halign: 'center', valign: 'middle', fontSize: 8 },
+            styles: { fontSize: 7.5, cellPadding: 1.5, halign: 'center', valign: 'middle' }, columnStyles: { 1: { halign: 'left' }, 2: { halign: 'left' } },
             didParseCell: function (data) {
-                const rowIdx = data.row.index;
-                const isLastRow = rowIdx === tableData.length - 1;
-                if (isLastRow && data.row.section === 'body') {
-                    data.cell.styles.fillColor = [225, 225, 225];
-                    data.cell.styles.fontStyle = 'bold';
-                    data.cell.styles.textColor = [0, 0, 0];
-                    if (data.column.index === advColIndex) data.cell.styles.textColor = [180, 0, 0];
-                    if (data.column.index === netColIndex) data.cell.styles.textColor = [0, 128, 0];
-                } 
-                else if (data.row.section === 'body') {
-                    if (data.column.index === advColIndex && data.cell.raw !== '-') data.cell.styles.textColor = [180, 0, 0];
-                    if (data.column.index === netColIndex && data.cell.raw !== '-') {
-                        data.cell.styles.textColor = [0, 128, 0];
-                        data.cell.styles.fontStyle = 'bold';
-                    }
-                }
+                const rowIdx = data.row.index; const isLastRow = rowIdx === tableData.length - 1;
+                if (isLastRow && data.row.section === 'body') { data.cell.styles.fillColor = [225, 225, 225]; data.cell.styles.fontStyle = 'bold'; data.cell.styles.textColor = [0, 0, 0]; if (data.column.index === advColIndex) data.cell.styles.textColor = [180, 0, 0]; if (data.column.index === netColIndex) data.cell.styles.textColor = [0, 128, 0]; } 
+                else if (data.row.section === 'body') { if (data.column.index === advColIndex && data.cell.raw !== '-') data.cell.styles.textColor = [180, 0, 0]; if (data.column.index === netColIndex && data.cell.raw !== '-') { data.cell.styles.textColor = [0, 128, 0]; data.cell.styles.fontStyle = 'bold'; } }
             }
         });
 
-        // 2. Draw COMPACT Department Summary Grid
         let currentY = doc.lastAutoTable.finalY + 10;
         const sortedDepts = Object.keys(deptStats).sort((a,b) => deptStats[b].cost - deptStats[a].cost);
-        
         sortedDepts.push('__GRAND_TOTAL__');
         deptStats['__GRAND_TOTAL__'] = { count: db.length, cost: tNet };
 
-        const boxW = 58;
-        const boxH = 12;
-        const gapX = 4;
-        const gapY = 4;
-        const cols = 3;
-        const rowsUsed = Math.ceil(sortedDepts.length / cols);
+        const boxW = 58; const boxH = 12; const gapX = 4; const gapY = 4; const cols = 3; const rowsUsed = Math.ceil(sortedDepts.length / cols);
+        if (currentY + (rowsUsed * (boxH + gapY)) + 20 > 280) { doc.addPage(); currentY = 20; }
 
-        if (currentY + (rowsUsed * (boxH + gapY)) + 20 > 280) { 
-            doc.addPage(); 
-            currentY = 20; 
-        }
-
-        doc.setFontSize(11);
-        doc.setTextColor(15, 61, 129);
-        doc.setFont("helvetica", "bold");
-        doc.text("Department Salary Summary", 14, currentY);
+        doc.setFontSize(11); doc.setTextColor(15, 61, 129); doc.setFont("helvetica", "bold"); doc.text("Department Salary Summary", 14, currentY);
         currentY += 6;
 
         sortedDepts.forEach((d, i) => {
-            const isTotal = d === '__GRAND_TOTAL__';
-            const x = 14 + (i % cols) * (boxW + gapX);
-            const y = currentY + Math.floor(i / cols) * (boxH + gapY);
-            
-            const count = deptStats[d].count;
-            const cost = deptStats[d].cost;
-            const pct = tNet > 0 ? ((cost / tNet) * 100).toFixed(1) : 0;
-            const dName = isTotal ? "GRAND TOTAL" : (d.length > 16 ? d.substring(0, 16) + '...' : d);
-
-            if (isTotal) {
-                doc.setFillColor(15, 61, 129); 
-                doc.setDrawColor(15, 61, 129);
-            } else {
-                doc.setFillColor(248, 250, 252); 
-                doc.setDrawColor(226, 232, 240); 
-            }
-            doc.rect(x, y, boxW, boxH, 'FD');
-
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(8);
-            doc.setTextColor(isTotal ? 255 : 40);
-            doc.text(dName.toUpperCase(), x + 3, y + 5);
-            
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(isTotal ? 200 : 100);
-            doc.text(`${count} Emp`, x + boxW - 3, y + 5, { align: 'right' });
-
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(9);
-            doc.setTextColor(isTotal ? 255 : 21, isTotal ? 255 : 128, isTotal ? 255 : 61);
-            doc.text(`Rs. ${Math.round(cost).toLocaleString()}`, x + 3, y + 9.5);
-            
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(8);
-            doc.setTextColor(isTotal ? 255 : 15, isTotal ? 255 : 61, isTotal ? 255 : 129); 
-            doc.text(`${pct}%`, x + boxW - 3, y + 9.5, { align: 'right' });
+            const isTotal = d === '__GRAND_TOTAL__'; const x = 14 + (i % cols) * (boxW + gapX); const y = currentY + Math.floor(i / cols) * (boxH + gapY);
+            const count = deptStats[d].count; const cost = deptStats[d].cost; const pct = tNet > 0 ? ((cost / tNet) * 100).toFixed(1) : 0; const dName = isTotal ? "GRAND TOTAL" : (d.length > 16 ? d.substring(0, 16) + '...' : d);
+            if (isTotal) { doc.setFillColor(15, 61, 129); doc.setDrawColor(15, 61, 129); } else { doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240); }
+            doc.rect(x, y, boxW, boxH, 'FD'); doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(isTotal ? 255 : 40); doc.text(dName.toUpperCase(), x + 3, y + 5);
+            doc.setFont("helvetica", "normal"); doc.setTextColor(isTotal ? 200 : 100); doc.text(`${count} Emp`, x + boxW - 3, y + 5, { align: 'right' });
+            doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(isTotal ? 255 : 21, isTotal ? 255 : 128, isTotal ? 255 : 61); doc.text(`Rs. ${Math.round(cost).toLocaleString()}`, x + 3, y + 9.5);
+            doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(isTotal ? 255 : 15, isTotal ? 255 : 61, isTotal ? 255 : 129); doc.text(`${pct}%`, x + boxW - 3, y + 9.5, { align: 'right' });
         });
 
         currentY += rowsUsed * (boxH + gapY) + 5;
-
-        // 3. New Joiners Summary (If any)
         if (newJoiners.length > 0) {
             if (currentY + 30 > 280) { doc.addPage(); currentY = 20; }
-            doc.setFontSize(11);
-            doc.setTextColor(15, 61, 129);
-            doc.setFont("helvetica", "bold");
-            doc.text("New Joiners Report", 14, currentY);
-
-            const njBody = newJoiners.map((nj, i) => [
-                i + 1,
-                nj.name,
-                nj.dept || '-',
-                formatDate(nj.joiningDate),
-                `Rs. ${Math.round(parseFloat(nj.basicSalary)||0).toLocaleString()}`
-            ]);
-
-            doc.autoTable({
-                startY: currentY + 4,
-                head: [['S.No', 'Employee Name', 'Department', 'Joining Date', 'Basic Salary']],
-                body: njBody,
-                theme: 'grid',
-                headStyles: { fillColor: [230, 240, 255], textColor: [15, 61, 129], fontStyle: 'bold', halign: 'center' },
-                styles: { fontSize: 8.5, halign: 'center', cellPadding: 2 },
-                columnStyles: { 1: { halign: 'left' }, 2: { halign: 'left' } }
-            });
+            doc.setFontSize(11); doc.setTextColor(15, 61, 129); doc.setFont("helvetica", "bold"); doc.text("New Joiners Report", 14, currentY);
+            const njBody = newJoiners.map((nj, i) => [ i + 1, nj.name, nj.dept || '-', formatDate(nj.joiningDate), `Rs. ${Math.round(parseFloat(nj.basicSalary)||0).toLocaleString()}` ]);
+            doc.autoTable({ startY: currentY + 4, head: [['S.No', 'Employee Name', 'Department', 'Joining Date', 'Basic Salary']], body: njBody, theme: 'grid', headStyles: { fillColor: [230, 240, 255], textColor: [15, 61, 129], fontStyle: 'bold', halign: 'center' }, styles: { fontSize: 8.5, halign: 'center', cellPadding: 2 }, columnStyles: { 1: { halign: 'left' }, 2: { halign: 'left' } } });
             currentY = doc.lastAutoTable.finalY + 10;
         }
 
-        // 4. Custom Editable Signature Footer
-        let finalY = currentY + 10;
-        if (finalY > 270) {
-            doc.addPage();
-            finalY = 30;
-        }
+        let finalY = currentY + 10; if (finalY > 270) { doc.addPage(); finalY = 30; }
+        doc.setFontSize(8); doc.setTextColor(0, 0, 0); doc.setLineWidth(0.5); doc.setDrawColor(0, 0, 0);
+        doc.line(14, finalY, 54, finalY); doc.text("Prepared By", 34, finalY + 5, { align: 'center', fontStyle: 'bold' }); doc.text(pdfSigs.prep, 34, finalY + 9, { align: 'center' });
+        doc.line(60, finalY, 100, finalY); doc.text("Rechecked By", 80, finalY + 5, { align: 'center', fontStyle: 'bold' }); doc.text(pdfSigs.rech, 80, finalY + 9, { align: 'center' });
+        doc.line(106, finalY, 150, finalY); doc.text("Verified By", 128, finalY + 5, { align: 'center', fontStyle: 'bold' }); doc.text(pdfSigs.ver, 128, finalY + 9, { align: 'center' });
+        doc.line(156, finalY, 196, finalY); doc.text("Final Approval", 176, finalY + 5, { align: 'center', fontStyle: 'bold' }); doc.text(pdfSigs.app, 176, finalY + 9, { align: 'center' });
 
-        doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
-        doc.setLineWidth(0.5);
-        doc.setDrawColor(0, 0, 0);
-        
-        doc.line(14, finalY, 54, finalY);
-        doc.text("Prepared By", 34, finalY + 5, { align: 'center', fontStyle: 'bold' });
-        doc.text(pdfSigs.prep, 34, finalY + 9, { align: 'center' });
-
-        doc.line(60, finalY, 100, finalY);
-        doc.text("Rechecked By", 80, finalY + 5, { align: 'center', fontStyle: 'bold' });
-        doc.text(pdfSigs.rech, 80, finalY + 9, { align: 'center' });
-
-        doc.line(106, finalY, 150, finalY);
-        doc.text("Verified By", 128, finalY + 5, { align: 'center', fontStyle: 'bold' });
-        doc.text(pdfSigs.ver, 128, finalY + 9, { align: 'center' });
-
-        doc.line(156, finalY, 196, finalY);
-        doc.text("Final Approval", 176, finalY + 5, { align: 'center', fontStyle: 'bold' });
-        doc.text(pdfSigs.app, 176, finalY + 9, { align: 'center' });
-
-        // Generate Output
-        doc.save("Arise_Verification_Dashboard.pdf");
+        doc.save(`Arise_Verification_${activeConf.short}.pdf`);
         notify("Verification PDF Exported successfully!", "success");
 
     } catch (err) {
-        console.error(err);
-        notify("Failed to export PDF. Ensure internet connection for libraries.", "error");
+        console.error(err); notify("Failed to export PDF. Ensure internet connection.", "error");
     }
 };
 
 const updateActive = (updates) => {
     if (!selectedId) return;
-    setDb(prev => prev.map(e => e.id === selectedId ? compute({ ...e, ...updates }) : e));
+    setDb(prev => prev.map(e => e.id === selectedId ? compute({ ...e, ...updates }, activeConf) : e));
 };
 
 const updateAtt = useCallback((day, val) => {
     if (!selectedId) return;
-    setDb(prev => prev.map(e => e.id === selectedId ? compute({ ...e, [`d${day}`]: val }) : e));
-}, [selectedId]);
+    setDb(prev => prev.map(e => e.id === selectedId ? compute({ ...e, [`d${day}`]: val }, activeConf) : e));
+}, [selectedId, activeConf, setDb]);
 
 const updateOt = (day, val) => {
-    setDb(prev => prev.map(e => e.id === selectedId ? compute({ ...e, [`ot${day}`]: val }) : e));
+    setDb(prev => prev.map(e => e.id === selectedId ? compute({ ...e, [`ot${day}`]: val }, activeConf) : e));
     setOtModal({ show: false, day: null, val: "" });
     setTimeout(() => { document.getElementById(`day-${day}`)?.focus(); }, 10);
 };
 
 const updateComment = (day, val) => {
-    setDb(prev => prev.map(e => e.id === selectedId ? compute({ ...e, [`c${day}`]: val }) : e));
+    setDb(prev => prev.map(e => e.id === selectedId ? compute({ ...e, [`c${day}`]: val }, activeConf) : e));
     setCommentModal({ show: false, day: null, val: "" });
     setTimeout(() => { document.getElementById(`day-${day}`)?.focus(); }, 10);
 };
 
+const handleTimeSelect = (timeStr) => {
+    if (timeModal.step === 'in') {
+        setTimeModal(prev => ({ ...prev, step: 'out', inVal: timeStr, custom: '' }));
+    } else {
+        setDb(prev => prev.map(e => e.id === selectedId ? compute({ ...e, [`in${timeModal.day}`]: timeModal.inVal, [`out${timeModal.day}`]: timeStr }, activeConf) : e));
+        setTimeModal({ show: false, day: null, step: 'in', inVal: '', outVal: '', custom: '' });
+        setFocusDay(prev => Math.min(activeConf.days, prev + 1)); 
+    }
+};
+
+const handleTimeCustomSave = () => {
+    if (!timeModal.custom) return notify("Please select a time", "error");
+    const formatted = formatTimeInput(timeModal.custom);
+    handleTimeSelect(formatted);
+};
+
+// Styling function for the large time grid buttons
+const getTimeBtnClass = (timeStr, step) => {
+    const isHour = timeStr.includes(':00');
+    const isHalf = timeStr.includes(':30');
+    
+    if (step === 'in') {
+        if (isHour) return "bg-emerald-100 border-emerald-300 text-emerald-900 shadow-sm font-bold hover:bg-emerald-500 hover:text-white";
+        if (isHalf) return "bg-emerald-50 border-emerald-200 text-emerald-800 font-semibold hover:bg-emerald-500 hover:text-white";
+        return "bg-white border-slate-200 text-slate-600 font-medium hover:bg-emerald-500 hover:text-white hover:border-emerald-500";
+    } else {
+        if (isHour) return "bg-rose-100 border-rose-300 text-rose-900 shadow-sm font-bold hover:bg-rose-500 hover:text-white";
+        if (isHalf) return "bg-rose-50 border-rose-200 text-rose-800 font-semibold hover:bg-rose-500 hover:text-white";
+        return "bg-white border-slate-200 text-slate-600 font-medium hover:bg-rose-500 hover:text-white hover:border-rose-500";
+    }
+};
+
 const handleResetSystem = () => {
-    if(confirm("Are you absolutely sure you want to delete all data and reset the password?")) {
-        localStorage.removeItem(DB_KEY);
-        localStorage.removeItem(PWD_KEY);
-        setDb([]);
-        setAuth({ isLocked: true, hasPassword: false, password: "" });
-        setSelectedId(null);
-        notify("System reset completely.", "success");
+    if(confirm(`Are you absolutely sure you want to delete all data for ${activeConf.label}?`)) {
+        setDb([]); setSelectedId(null); notify(`System reset for ${activeConf.label}.`, "success");
+    }
+};
+
+const handleMigrateEmployees = () => {
+    const otherMonthKey = MONTHS.find(m => m.id !== activeMonthKey).id;
+    const oldDb = dbs[otherMonthKey];
+    if (!oldDb || oldDb.length === 0) return notify("No employees exist in the other month yet.", "error");
+    if (confirm(`Copy ${oldDb.length} employees from the other month into ${activeConf.label}? All their attendance logic will start fresh.`)) {
+        const copied = oldDb.map(e => {
+            const newE = { ...e };
+            for(let i=1; i<=31; i++) { delete newE[`d${i}`]; delete newE[`ot${i}`]; delete newE[`c${i}`]; delete newE[`in${i}`]; delete newE[`out${i}`]; }
+            for(let i=1; i<=activeConf.days; i++) { newE[`d${i}`] = ""; newE[`ot${i}`] = ""; newE[`c${i}`] = ""; newE[`in${i}`] = ""; newE[`out${i}`] = ""; }
+            newE.previousBalance = 0; newE.advance = 0;
+            return compute(newE, activeConf);
+        });
+        setDb(copied); notify("Workforce migrated successfully!", "success");
     }
 };
 
 useEffect(() => {
     const handleGlobalKey = (e) => {
-        if (otModal.show || commentModal.show || pdfModal.show) return;
+        if (otModal.show || commentModal.show || pdfModal.show || timeModal.show) return;
         if (activeTab !== 'employees') return;
         if (!selectedId) return;
         
@@ -918,18 +1055,31 @@ useEffect(() => {
         }
 
         if (!focusDay) return;
-        if (e.key === 'ArrowRight') { setFocusDay(prev => Math.min(DAYS, prev + 1)); e.preventDefault(); }
+        if (e.key === 'ArrowRight') { setFocusDay(prev => Math.min(activeConf.days, prev + 1)); e.preventDefault(); }
         if (e.key === 'ArrowLeft') { setFocusDay(prev => Math.max(1, prev - 1)); e.preventDefault(); }
         if (e.key === 'ArrowUp') { setFocusDay(prev => Math.max(1, prev - 7)); e.preventDefault(); }
-        if (e.key === 'ArrowDown') { setFocusDay(prev => Math.min(DAYS, prev + 7)); e.preventDefault(); }
+        if (e.key === 'ArrowDown') { setFocusDay(prev => Math.min(activeConf.days, prev + 7)); e.preventDefault(); }
 
         const key = e.key.toLowerCase();
-        if (key === 'p') { updateAtt(focusDay, 'P'); setFocusDay(prev => Math.min(DAYS, prev + 1)); }
-        if (key === 'a') { updateAtt(focusDay, 'A'); setFocusDay(prev => Math.min(DAYS, prev + 1)); }
-        if (key === 'h') { updateAtt(focusDay, 'H'); setFocusDay(prev => Math.min(DAYS, prev + 1)); }
-        if (key === 't') { updateAtt(focusDay, 'T'); setFocusDay(prev => Math.min(DAYS, prev + 1)); }
-        if (key === 'w') { updateAtt(focusDay, 'W/O'); setFocusDay(prev => Math.min(DAYS, prev + 1)); }
-        if (e.key === 'Backspace' || e.key === 'Delete') { updateAtt(focusDay, ''); }
+        
+        // Mark Present & Trigger Time Bubble
+        if (key === 'p') { 
+            updateAtt(focusDay, 'P'); 
+            setTimeModal({ show: true, day: focusDay, step: 'in', inVal: '', outVal: '', custom: '' });
+            e.preventDefault(); 
+        }
+        
+        // Other markings clear the in/out time
+        if (['a', 'h', 't', 'w'].includes(key) || e.key === 'Backspace' || e.key === 'Delete') { 
+            let val = '';
+            if (key === 'a') val = 'A';
+            if (key === 'h') val = 'H';
+            if (key === 't') val = 'T';
+            if (key === 'w') val = 'W/O';
+            setDb(prev => prev.map(em => em.id === selectedId ? compute({ ...em, [`d${focusDay}`]: val, [`in${focusDay}`]: '', [`out${focusDay}`]: '' }, activeConf) : em));
+            setFocusDay(prev => Math.min(activeConf.days, prev + 1)); 
+            e.preventDefault();
+        }
         
         if (key === 'm') {
             updateAtt(focusDay, 'P?');
@@ -951,7 +1101,7 @@ useEffect(() => {
     };
     window.addEventListener('keydown', handleGlobalKey);
     return () => window.removeEventListener('keydown', handleGlobalKey);
-}, [selectedId, focusDay, db, otModal.show, commentModal.show, pdfModal.show, updateAtt, activeTab]);
+}, [selectedId, focusDay, db, otModal.show, commentModal.show, pdfModal.show, timeModal.show, updateAtt, activeTab, activeConf.days]);
 
 useEffect(() => { if (focusDay && activeTab === 'employees') document.getElementById(`day-${focusDay}`)?.focus(); }, [focusDay, activeTab]);
 
@@ -976,9 +1126,7 @@ if (auth.isLocked) {
     return (
         <div className="flex h-screen w-full bg-slate-900 font-sans items-center justify-center">
             <div className="bg-white p-8 rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm flex flex-col items-center">
-                <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-brand-100">
-                    <Icon path="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" className="w-8 h-8" />
-                </div>
+                <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-brand-100"><Icon path="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" className="w-8 h-8" /></div>
                 <h1 className="text-2xl font-black text-slate-800 tracking-tight mb-2"><span className="text-brand-600">Arpit</span> HR OS</h1>
                 <p className="text-xs font-bold text-slate-500 mb-8 text-center">{!auth.hasPassword ? "Create a master password." : "Enter your master password."}</p>
                 <form onSubmit={handleLogin} className="w-full">
@@ -998,23 +1146,37 @@ return (
         <div className="flex justify-between items-center">
             <div>
                 <h1 className="text-xl font-black tracking-tight text-slate-900"><span className="text-brand-600">Arise</span> HR</h1>
-                <p className="text-xs font-semibold text-slate-500 mt-0.5">May 2026 Register</p>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">{activeConf.label} Register</p>
             </div>
             <button onClick={() => { setAuth({...auth, isLocked: true}); notify("Locked securely.", "success"); }} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition" title="Lock System"><Icon path="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></button>
         </div>
+
+        <div className="flex gap-1 mt-1 bg-slate-200 p-1 rounded-lg">
+            {MONTHS.map(m => (
+                <button 
+                    key={m.id} onClick={() => { setActiveMonthKey(m.id); setLogDate(1); setFocusDay(1); setSelectedId(null); }}
+                    className={`flex-1 py-1.5 text-[11px] font-black rounded-md transition-all ${activeMonthKey === m.id ? 'bg-white text-brand-700 shadow border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                >{m.label}</button>
+            ))}
+        </div>
         
-        <div className="flex gap-1.5 mt-1">
-            <input type="file" accept=".csv" className="hidden" ref={fileRef} onChange={handleImport} />
-            <button onClick={() => fileRef.current.click()} className="flex-1 py-1.5 px-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm"><Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" className="w-3 h-3"/> Import</button>
-            <button onClick={handleExportExcel} className="flex-1 py-1.5 px-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm" title="Detailed Attendance Sheet"><Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" className="w-3 h-3"/> Full Excel</button>
-            <button onClick={() => setPdfModal({ show: true, hideBasic: false })} className="flex-1 py-1.5 px-1 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm" title="Verification Summary Print"><Icon path="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" className="w-3 h-3"/> PDF Recheck</button>
-            <button onClick={() => { const e = defaultEmp(); setDb([e, ...db]); setActiveTab('employees'); setSelectedId(e.id); }} className="px-2 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-md transition shadow-md shadow-brand-500/30" title="Add New"><Icon path="M12 4v16m8-8H4" className="w-4 h-4"/></button>
+        <div className="flex flex-col gap-1.5 mt-2">
+            <div className="flex gap-1.5">
+                <input type="file" accept=".csv" className="hidden" ref={fileRef} onChange={handleImport} />
+                <button onClick={() => fileRef.current.click()} className="flex-1 py-1.5 px-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm"><Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" className="w-3 h-3"/> Import</button>
+                <button onClick={() => { const e = defaultEmp(activeConf); setDb([e, ...db]); setActiveTab('employees'); setSelectedId(e.id); }} className="px-2 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-md transition shadow-md shadow-brand-500/30" title="Add New"><Icon path="M12 4v16m8-8H4" className="w-4 h-4"/></button>
+            </div>
+            <div className="flex gap-1.5">
+                <button onClick={handleExportInOutExcel} className="flex-1 py-1.5 px-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm" title="Download Special IN/OUT Time Sheet"><Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" className="w-3 h-3"/> IN/OUT Excel</button>
+                <button onClick={handleExportExcel} className="flex-1 py-1.5 px-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm" title="Detailed Attendance Sheet"><Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" className="w-3 h-3"/> Full Excel</button>
+                <button onClick={() => setPdfModal({ show: true, hideBasic: false })} className="flex-1 py-1.5 px-1 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm" title="Verification Summary Print"><Icon path="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" className="w-3 h-3"/> PDF Recheck</button>
+            </div>
         </div>
 
         <div className="flex bg-slate-200 p-1 rounded-lg mt-1 shadow-inner gap-1">
-            <button onClick={() => setActiveTab('employees')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'employees' ? 'bg-white text-brand-700 shadow' : 'text-slate-500 hover:text-slate-700'}`}>Employees</button>
-            <button onClick={() => setActiveTab('logs')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'logs' ? 'bg-white text-brand-700 shadow' : 'text-slate-500 hover:text-slate-700'}`}>Daily Logs</button>
-            <button onClick={() => setActiveTab('dashboard')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'dashboard' ? 'bg-white text-brand-700 shadow' : 'text-slate-500 hover:text-slate-700'}`}>Analytics</button>
+            <button onClick={() => setActiveTab('employees')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'employees' ? 'bg-white text-slate-800 shadow' : 'text-slate-500 hover:text-slate-700'}`}>Employees</button>
+            <button onClick={() => setActiveTab('logs')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'logs' ? 'bg-white text-slate-800 shadow' : 'text-slate-500 hover:text-slate-700'}`}>Daily Logs</button>
+            <button onClick={() => setActiveTab('dashboard')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'dashboard' ? 'bg-white text-slate-800 shadow' : 'text-slate-500 hover:text-slate-700'}`}>Analytics</button>
         </div>
     </div>
     
@@ -1027,11 +1189,21 @@ return (
                 </div>
                 <div className="flex justify-between items-center mt-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                     <span>{filtered.length} People</span>
-                    <button onClick={handleResetSystem} className="text-rose-500 hover:underline">Reset</button>
+                    <button onClick={handleResetSystem} className="text-rose-500 hover:underline">Reset Month</button>
                 </div>
             </div>
             <div className="flex-1 overflow-y-auto p-2 hide-scroll bg-slate-50 space-y-1">
-                {filtered.length === 0 && <div className="text-center p-6 text-sm text-slate-400 font-medium">No records found. Import CSV or Add New.</div>}
+                {filtered.length === 0 && (
+                    <div className="flex flex-col items-center justify-center p-6 text-center">
+                        <div className="text-sm text-slate-400 font-medium mb-4">No records found for {activeConf.label}.</div>
+                        {dbs[MONTHS.find(m => m.id !== activeMonthKey).id]?.length > 0 && (
+                            <button onClick={handleMigrateEmployees} className="w-full text-xs bg-brand-100 text-brand-700 px-4 py-3 rounded-xl font-bold hover:bg-brand-200 transition border border-brand-200 shadow-sm flex items-center justify-center gap-2">
+                                <Icon path="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" className="w-4 h-4"/>
+                                Migrate Workforce Forward
+                            </button>
+                        )}
+                    </div>
+                )}
                 {filtered.map((emp) => (
                     <div key={emp.id} onClick={() => setSelectedId(emp.id)} className={`p-3 rounded-xl cursor-pointer border transition-all duration-200 ${selectedId === emp.id ? 'bg-white border-brand-500 shadow-md shadow-brand-500/10 scale-[1.02]' : 'bg-transparent border-transparent hover:bg-slate-100 hover:border-slate-200'}`}>
                         <div className="flex justify-between items-start mb-1">
@@ -1055,11 +1227,11 @@ return (
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Log Date</span>
             </div>
             <div className="flex-1 overflow-y-auto p-2 hide-scroll bg-slate-50 space-y-1">
-                {Array.from({ length: DAYS }, (_, i) => i + 1).map(day => (
+                {Array.from({ length: activeConf.days }, (_, i) => i + 1).map(day => (
                     <div key={day} onClick={() => setLogDate(day)} className={`p-3 rounded-xl cursor-pointer border transition-all duration-200 ${logDate === day ? 'bg-white border-brand-500 shadow-md scale-[1.02]' : 'bg-transparent border-transparent hover:bg-slate-100'}`}>
                         <div className="flex justify-between items-center">
-                            <h3 className={`font-bold text-sm ${logDate === day ? 'text-brand-700' : 'text-slate-700'}`}>May {String(day).padStart(2, '0')}, 2026</h3>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${WEEKENDS.includes(day) ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'}`}>{DAY_NAMES[(START_DAY_OFFSET + day - 1) % 7]}</span>
+                            <h3 className={`font-bold text-sm ${logDate === day ? 'text-brand-700' : 'text-slate-700'}`}>{activeConf.label.split(' ')[0]} {String(day).padStart(2, '0')}, {activeConf.label.split(' ')[1]}</h3>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${activeConf.weekends.includes(day) ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'}`}>{DAY_NAMES[(activeConf.startOffset + day - 1) % 7]}</span>
                         </div>
                     </div>
                 ))}
@@ -1077,14 +1249,14 @@ return (
 
 <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
 {activeTab === 'dashboard' ? (
-    <OwnerDashboard db={db} />
+    <OwnerDashboard db={db} activeConf={activeConf} />
 ) : activeTab === 'logs' ? (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
         <div className="bg-white border-b border-slate-200 px-8 py-6 z-10 shrink-0 shadow-sm">
             <div className="flex justify-between items-start">
                 <div>
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Daily Log: May {logDate}, 2026</h2>
-                    <p className="text-sm font-semibold text-slate-500 mt-1">{DAY_NAMES[(START_DAY_OFFSET + logDate - 1) % 7]}</p>
+                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Daily Log: {activeConf.label.split(' ')[0]} {logDate}, {activeConf.label.split(' ')[1]}</h2>
+                    <p className="text-sm font-semibold text-slate-500 mt-1">{DAY_NAMES[(activeConf.startOffset + logDate - 1) % 7]}</p>
                 </div>
                 <div className="text-[10px] font-bold text-slate-400 mt-1 px-2 py-1 bg-slate-100 rounded border border-slate-200 hidden md:block">Press 'Esc' to close</div>
             </div>
@@ -1095,12 +1267,12 @@ return (
                     const val = emp[`d${logDate}`] || (emp.autoWoDays?.[logDate] === "W/O" ? "W/O" : "");
                     const aVal = String(val).trim().toUpperCase();
                     const isE = String(emp.type || "").trim().toUpperCase() === "E";
-                    const isSunday = WEEKENDS.includes(logDate);
+                    const isSunday = activeConf.weekends.includes(logDate);
                     let getsExtraWo = false;
                     if (isE && isSunday && aVal && ['P', 'P?', 'H', '0.5', 'T'].includes(aVal)) getsExtraWo = true;
 
                     if (aVal === 'P') p++;
-                    else if (aVal === 'P?') pMiss++;
+                    else if (aVal === 'P?') { p++; pMiss++; } 
                     else if (aVal === 'A') a++;
                     else if (aVal === 'H' || aVal === '0.5') h++;
                     else if (aVal === 'T') t++;
@@ -1132,10 +1304,9 @@ return (
                         <tr>
                             <th className="p-4 font-black">Employee Details</th>
                             <th className="p-4 font-black">Code</th>
-                            <th className="p-4 font-black">Type</th>
                             <th className="p-4 font-black">Attendance Status</th>
+                            <th className="p-4 font-black">In / Out Time</th>
                             <th className="p-4 font-black">Overtime (OT)</th>
-                            <th className="p-4 font-black">Comments / Notes</th>
                         </tr>
                     </thead>
                     <tbody className="text-sm font-medium text-slate-700">
@@ -1144,26 +1315,22 @@ return (
                             const autoWoVal = !manualVal && emp.autoWoDays?.[logDate] === "W/O" ? "W/O" : "";
                             const aVal = manualVal ? String(manualVal).toUpperCase() : autoWoVal;
                             const otVal = emp[`ot${logDate}`];
-                            const cVal = emp[`c${logDate}`];
-                            const isE = String(emp.type || "").trim().toUpperCase() === "E";
-                            const getsExtraWo = WEEKENDS.includes(logDate) && isE && manualVal && ['P', 'P?', 'H', '0.5', 'T'].includes(String(manualVal).toUpperCase());
-
                             return (
                                 <tr key={emp.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                                     <td className="p-4 font-bold text-slate-800">{emp.name}</td>
                                     <td className="p-4 text-xs font-bold text-slate-400">{emp.code}</td>
-                                    <td className="p-4 text-xs font-bold text-slate-400">{emp.type || '-'}</td>
                                     <td className="p-4">
                                         <div className="flex items-center gap-2">
                                             <span className={`px-2 py-1.5 rounded-md text-[10px] font-black border ${aVal ? getAttColor(aVal).replace('border-', 'border-').replace('text-white', '') : 'bg-slate-100 text-slate-400 border-slate-200'}`}>{aVal || 'UNMARKED'}</span>
-                                            {getsExtraWo && <span className="text-[10px] font-black text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded border border-purple-200" title="Double Day">+ W/O</span>}
                                         </div>
+                                    </td>
+                                    <td className="p-4 text-[11px] font-bold text-slate-500">
+                                        {emp[`in${logDate}`] && <div className="text-emerald-600">IN: {emp[`in${logDate}`]}</div>}
+                                        {emp[`out${logDate}`] && <div className="text-rose-600">OUT: {emp[`out${logDate}`]}</div>}
+                                        {!emp[`in${logDate}`] && !emp[`out${logDate}`] && '-'}
                                     </td>
                                     <td className="p-4">
                                         {otVal ? <span className={`px-2 py-1 rounded-md text-[10px] font-bold border ${parseFloat(otVal) < 0 ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-brand-100 text-brand-700 border-brand-200'}`}>{otVal} Hrs</span> : '-'}
-                                    </td>
-                                    <td className="p-4 text-xs text-slate-500 truncate max-w-[200px]" title={cVal}>
-                                        {cVal ? <span className="flex items-center gap-1"><Icon path="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" className="w-3.5 h-3.5 text-brand-500"/> {cVal}</span> : '-'}
                                     </td>
                                 </tr>
                             )
@@ -1195,17 +1362,12 @@ return (
                         </div>
                     </div>
                 </div>
-                <button onClick={() => { if(confirm("Delete this employee?")) { setDb(db.filter(e => e.id !== selectedId)); setSelectedId(null); } }} className="px-4 py-2 bg-white border border-rose-200 text-rose-600 rounded-lg text-sm font-bold hover:bg-rose-50 transition shadow-sm flex items-center gap-2"><Icon path="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" className="w-4 h-4"/> Delete</button>
             </div>
 
             <div className="mt-6 flex flex-wrap gap-x-8 gap-y-4 border-t border-slate-100 pt-5">
                 <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Working Days</span><span className="text-xl font-black text-slate-800">{activeEmp.workingDays}</span></div>
                 <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Present (P)</span><span className="text-xl font-black text-emerald-600">{activeEmp.pOnly}</span></div>
                 <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Missing (P?)</span><span className="text-xl font-black text-orange-500">{activeEmp.pMiss}</span></div>
-                <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Half (H)</span><span className="text-xl font-black text-amber-500">{activeEmp.half}</span></div>
-                <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Tour (T)</span><span className="text-xl font-black text-sky-500">{activeEmp.tour}</span></div>
-                <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Total W/O</span><span className="text-xl font-black text-purple-500">{activeEmp.wo}</span></div>
-                <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Absent (A)</span><span className="text-xl font-black text-rose-500">{activeEmp.absent}</span></div>
                 <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Total OT</span><span className="text-xl font-black text-brand-600">{activeEmp.otHrs}h</span></div>
             </div>
 
@@ -1236,16 +1398,13 @@ return (
         <div className="flex-1 overflow-y-auto p-8 bg-slate-50 relative" onClick={() => { if(!focusDay) setFocusDay(1); }}>
             <div className="flex flex-col gap-4 mb-6">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight">May 2026 Register</h3>
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight">{activeConf.label} Register</h3>
                     <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm text-[11px] font-bold text-slate-600">
-                        <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">P</kbd> Prs</span>
-                        <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm text-orange-600">M</kbd> P? (Miss)</span>
+                        <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm text-brand-600">P</kbd> Prs (Triggers Time)</span>
                         <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">A</kbd> Abs</span>
                         <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">H</kbd> Half</span>
                         <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">T</kbd> Tour</span>
-                        <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">W</kbd> W/O</span>
                         <span className="flex items-center gap-1 ml-2"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">O</kbd> OT</span>
-                        <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">C</kbd> Note</span>
                         <span className="flex items-center gap-1 ml-2"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm text-base leading-none">⌫</kbd> Clr</span>
                     </div>
                 </div>
@@ -1253,10 +1412,10 @@ return (
 
             <div className="grid grid-cols-7 gap-3 pb-24">
                 {DAY_NAMES.map(d => <div key={d} className="text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">{d}</div>)}
-                {Array.from({ length: START_DAY_OFFSET }).map((_, i) => <div key={`empty-${i}`} className="opacity-0"></div>)}
-                {Array.from({ length: DAYS }, (_, i) => {
+                {Array.from({ length: activeConf.startOffset }).map((_, i) => <div key={`empty-${i}`} className="opacity-0"></div>)}
+                {Array.from({ length: activeConf.days }, (_, i) => {
                     const dNum = i + 1;
-                    const isWk = WEEKENDS.includes(dNum);
+                    const isWk = activeConf.weekends.includes(dNum);
                     const manualVal = activeEmp[`d${dNum}`];
                     const autoWoVal = !manualVal && activeEmp.autoWoDays?.[dNum] === "W/O" ? "W/O" : "";
                     const aVal = manualVal ? String(manualVal).toUpperCase() : autoWoVal;
@@ -1265,20 +1424,31 @@ return (
                     const getsExtraWo = isWk && isE && manualVal && ['P', 'P?', 'H', '0.5', 'T'].includes(String(manualVal).toUpperCase());
                     const oVal = activeEmp[`ot${dNum}`];
                     const cVal = activeEmp[`c${dNum}`];
+                    const inVal = activeEmp[`in${dNum}`];
+                    const outVal = activeEmp[`out${dNum}`];
                     const cColor = getAttColor(aVal);
-                    const cellTitle = getsExtraWo ? "E-Type Sunday Work: Counted as Present + Earned W/O" : (isAutoWo ? "Auto Earned W/O (4+ duties)" : "");
 
                     return (
-                        <div id={`day-${dNum}`} key={dNum} tabIndex={0} onClick={() => setFocusDay(dNum)} className={`day-card relative h-24 rounded-2xl border-2 cursor-pointer flex flex-col p-2 bg-white ${focusDay === dNum ? 'border-brand-500 shadow-md ring-4 ring-brand-500/20' : 'border-slate-200 hover:border-slate-300'} ${isWk && !aVal ? 'bg-amber-50' : ''}`} title={cellTitle}>
+                        <div id={`day-${dNum}`} key={dNum} tabIndex={0} onClick={() => setFocusDay(dNum)} className={`day-card relative h-28 rounded-2xl border-2 cursor-pointer flex flex-col p-2 bg-white ${focusDay === dNum ? 'border-brand-500 shadow-md ring-4 ring-brand-500/20' : 'border-slate-200 hover:border-slate-300'} ${isWk && !aVal ? 'bg-amber-50' : ''}`}>
                             <span className={`absolute top-2 left-3 text-sm font-black ${isWk ? 'text-amber-500' : 'text-slate-400'}`}>{dNum}</span>
                             {cVal && (
                                 <div className="absolute top-2 right-2 text-brand-500 bg-brand-50 hover:bg-brand-100 transition p-1 rounded-md z-20 cursor-pointer shadow-sm" title={cVal} onClick={(e) => { e.stopPropagation(); setFocusDay(dNum); setCommentModal({ show: true, day: dNum, val: cVal }); }}>
                                     <Icon path="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" className="w-3.5 h-3.5"/>
                                 </div>
                             )}
-                            <div className="flex-1 flex items-center justify-center mt-3 gap-2">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm border-2 ${cColor} ${isAutoWo ? 'opacity-70 border-dashed bg-transparent text-purple-500 border-purple-400' : ''}`}>{aVal || '-'}</div>
-                                {oVal && <div className={`px-2 py-0.5 rounded border text-[10px] font-black ${parseFloat(oVal) < 0 ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-brand-100 text-brand-700 border-brand-200'}`}>{oVal}h</div>}
+                            
+                            <div className="flex-1 flex flex-col items-center justify-center mt-3 gap-1">
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm border-2 ${cColor} ${isAutoWo ? 'opacity-70 border-dashed bg-transparent text-purple-500 border-purple-400' : ''}`}>{aVal || '-'}</div>
+                                    {oVal && <div className={`px-1.5 py-0.5 rounded border text-[10px] font-black ${parseFloat(oVal) < 0 ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-brand-100 text-brand-700 border-brand-200'}`}>{oVal}h</div>}
+                                </div>
+                                
+                                {(inVal || outVal) && (
+                                    <div className="text-[9px] font-bold text-slate-500 mt-1 leading-tight text-center">
+                                        {inVal && <div className="text-emerald-600">↑ {inVal}</div>}
+                                        {outVal && <div className="text-rose-600">↓ {outVal}</div>}
+                                    </div>
+                                )}
                             </div>
                             {getsExtraWo && <div className="absolute bottom-1 left-0 right-0 flex justify-center"><span className="text-[8px] font-black uppercase text-purple-500 bg-purple-50 px-1 rounded-sm">+ W/O</span></div>}
                         </div>
@@ -1290,7 +1460,81 @@ return (
 )}
 </div>
 
-{/* ADVANCED PDF EXPORT MODAL */}
+{/* TIME SELECTION MODAL (BUBBLE) */}
+{timeModal.show && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <div className="bg-white rounded-2xl shadow-2xl p-6 w-[600px] transform transition-all scale-100 relative overflow-hidden">
+            <button onClick={() => setTimeModal({...timeModal, show: false})} className="absolute top-4 right-4 p-1 rounded hover:bg-slate-100 text-slate-400 transition">
+                <Icon path="M6 18L18 6M6 6l12 12" className="w-6 h-6"/>
+            </button>
+            
+            <div className="mb-6 flex items-center justify-between pr-8 border-b border-slate-100 pb-4">
+                <div>
+                    <h3 className={`text-2xl font-black tracking-tight flex items-center gap-2 ${timeModal.step === 'in' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {timeModal.step === 'in' ? <Icon path="M5 10l7-7m0 0l7 7m-7-7v18" className="w-6 h-6"/> : <Icon path="M19 14l-7 7m0 0l-7-7m7 7V3" className="w-6 h-6"/>}
+                        {timeModal.step === 'in' ? 'Select Clock IN Time' : 'Select Clock OUT Time'}
+                    </h3>
+                    <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">{activeEmp?.name} • Day {timeModal.day}</p>
+                </div>
+            </div>
+
+            {/* Quick Suggestions Row */}
+            <div className="mb-5">
+                <h4 className="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Common {timeModal.step === 'in' ? 'IN' : 'OUT'} Times</h4>
+                <div className="grid grid-cols-4 gap-3">
+                    {(timeModal.step === 'in' ? SUGGESTED_IN_TIMES : SUGGESTED_OUT_TIMES).map((timeStr, idx) => (
+                        <button 
+                            key={idx} 
+                            onClick={() => handleTimeSelect(timeStr)}
+                            className={`py-3 rounded-xl font-black text-sm transition-all border-2 shadow-sm ${
+                                timeModal.step === 'in' 
+                                ? 'bg-emerald-100 border-emerald-300 text-emerald-800 hover:bg-emerald-500 hover:text-white hover:border-emerald-500' 
+                                : 'bg-rose-100 border-rose-300 text-rose-800 hover:bg-rose-500 hover:text-white hover:border-rose-500'
+                            }`}
+                        >
+                            {timeStr}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <h4 className="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest border-t border-slate-100 pt-4">All Time Options</h4>
+            <div className="grid grid-cols-5 gap-2 max-h-56 overflow-y-auto p-1 mb-4 time-grid">
+                {(timeModal.step === 'in' ? inTimeOptions : outTimeOptions).map((timeStr, idx) => (
+                    <button 
+                        key={idx} 
+                        onClick={() => handleTimeSelect(timeStr)}
+                        className={`text-xs py-2.5 rounded-lg border transition-all ${getTimeBtnClass(timeStr, timeModal.step)}`}
+                    >
+                        {timeStr}
+                    </button>
+                ))}
+            </div>
+
+            <div className="flex items-center gap-3 border-t border-slate-100 pt-4 bg-slate-50 -mx-6 -mb-6 px-6 pb-6">
+                <div className="flex-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Or Enter Custom Minutes</p>
+                    <input 
+                        type="time" 
+                        value={timeModal.custom}
+                        onChange={(e) => setTimeModal({...timeModal, custom: e.target.value})}
+                        className={`w-full bg-white border-2 rounded-lg px-4 py-3 text-sm font-black text-slate-700 outline-none transition shadow-sm ${timeModal.step === 'in' ? 'focus:border-emerald-500' : 'focus:border-rose-500'}`}
+                    />
+                </div>
+                <button 
+                    onClick={handleTimeCustomSave} 
+                    className={`self-end font-black text-sm px-6 py-3 rounded-lg shadow-lg transition text-white ${timeModal.step === 'in' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/30'}`}
+                >
+                    Save Custom
+                </button>
+            </div>
+            
+            <button onClick={() => setTimeModal({...timeModal, show: false})} className="absolute bottom-6 right-6 text-xs font-bold text-slate-400 hover:text-slate-600 hover:underline">Skip Time Selection</button>
+        </div>
+    </div>
+)}
+
+{/* OTHER MODALS */}
 {pdfModal.show && (
     <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
         <div className="bg-white rounded-2xl shadow-2xl p-6 w-[450px] transform transition-all scale-100">
@@ -1301,12 +1545,7 @@ return (
             
             <div className="mb-5 bg-slate-50 border border-slate-200 p-4 rounded-xl">
                 <label className="flex items-center gap-3 cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        checked={pdfModal.hideBasic} 
-                        onChange={e => setPdfModal({...pdfModal, hideBasic: e.target.checked})} 
-                        className="w-5 h-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500" 
-                    />
+                    <input type="checkbox" checked={pdfModal.hideBasic} onChange={e => setPdfModal({...pdfModal, hideBasic: e.target.checked})} className="w-5 h-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
                     <div>
                         <div className="text-sm font-bold text-slate-800">Hide Basic Salary</div>
                         <div className="text-[10px] font-bold text-slate-400 mt-0.5">Omit base pay column from the PDF print</div>
