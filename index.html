@@ -59,7 +59,7 @@ body {
 .hide-scroll::-webkit-scrollbar { display: none; }
 .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Custom helpers for components */
+/* Custom layout helpers */
 .sidebar-panel { width: 320px; min-width: 320px; }
 .bg-brand-50 { background-color: var(--brand-50); }
 .bg-brand-100 { background-color: var(--brand-100); }
@@ -115,7 +115,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover, input[type="time"]:
 .time-grid::-webkit-scrollbar { width: 6px; }
 .time-grid::-webkit-scrollbar-thumb { background: var(--slate-200); border-radius: 10px; }
 
-/* Custom Grids to substitute Tailwind Grid Templates */
+/* Grid systems replacing tailwind custom column specifications */
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -832,7 +832,7 @@ useEffect(() => {
         }
     };
     window.addEventListener('keydown', handleGlobalEsc);
-    return () => window.removeIntersection?.() || window.removeEventListener('keydown', handleGlobalEsc);
+    return () => window.removeEventListener('keydown', handleGlobalEsc);
 }, [otModal.show, commentModal.show, pdfModal.show, timeModal.show, activeTab]);
 
 const notify = (msg, type="success") => setToast({ msg, type });
@@ -1869,7 +1869,7 @@ return (
             <h4 className="fs-8 font-black text-slate-400 mb-2 text-uppercase tracking-widest border-top pt-3">All Time Options</h4>
             <div className="row g-1 max-h-56 overflow-y-auto mb-4 time-grid" style={{ maxHeight: '200px' }}>
                 {(timeModal.step === 'in' ? inTimeOptions : outTimeOptions).map((timeStr, idx) => (
-                    <div className="col-4 col-md-3 col-lg-2.4 p-1" key={idx}>
+                    <div className="col-4 col-md-3 col-sm-6 p-1" key={idx}>
                         <button 
                             onClick={() => handleTimeSelect(timeStr)}
                             className={`btn btn-sm w-100 py-2 fs-8 font-bold ${getTimeBtnClass(timeStr, timeModal.step)}`}
