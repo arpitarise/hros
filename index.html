@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arpit OS</title>
+<title>Arpit OS for Attendece Arise - Modern HR & Analytics</title>
 
 <!-- React & Utilities -->
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- Pinned Babel to a stable version to prevent the 'import' module error -->
+<script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -50,7 +51,9 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover, input[type="time"]:
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
+
+<!-- Added data-type="module" and data-presets to fix Babel parsing -->
+<script type="text/babel" data-type="module" data-presets="react,env">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
 const PWD_KEY = 'arise_sys_pwd';
@@ -447,23 +450,23 @@ const setDb = useCallback((newDbOrFn) => {
     });
 }, [activeMonthKey]);
 
-const [activeTab, setActiveTab] = useState("employees");
-const [logDate, setLogDate] = useState(1);
-const [selectedId, setSelectedId] = useState(null);
-const [search, setSearch] = useState("");
-const [focusDay, setFocusDay] = useState(null);
-const [otModal, setOtModal] = useState({ show: false, day: null, val: "" });
-const [commentModal, setCommentModal] = useState({ show: false, day: null, val: "" });
-const [pdfModal, setPdfModal] = useState({ show: false, hideBasic: false }); 
-const [timeModal, setTimeModal] = useState({ show: false, day: null, step: 'in', inVal: '', outVal: '', custom: '' });
+const [activeTab, useState] = React.useState("employees");
+const [logDate, setLogDate] = React.useState(1);
+const [selectedId, setSelectedId] = React.useState(null);
+const [search, setSearch] = React.useState("");
+const [focusDay, setFocusDay] = React.useState(null);
+const [otModal, setOtModal] = React.useState({ show: false, day: null, val: "" });
+const [commentModal, setCommentModal] = React.useState({ show: false, day: null, val: "" });
+const [pdfModal, setPdfModal] = React.useState({ show: false, hideBasic: false }); 
+const [timeModal, setTimeModal] = React.useState({ show: false, day: null, step: 'in', inVal: '', outVal: '', custom: '' });
 
-const [pdfSigs, setPdfSigs] = useState(() => {
+const [pdfSigs, setPdfSigs] = React.useState(() => {
     const saved = localStorage.getItem(SIG_KEY);
     if (saved) return JSON.parse(saved);
     return { prep: "MR. ARPIT MISHRA", rech: "MR. AMIT SINGH", ver: "MR. KUNAL CHANCHAL", app: "MR. MS SIR" };
 });
 
-const [toast, setToast] = useState(null);
+const [toast, setToast] = React.useState(null);
 const fileRef = useRef(null);
 const otInputRef = useRef(null);
 const commentInputRef = useRef(null);
