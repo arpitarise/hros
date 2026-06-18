@@ -3,64 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arpit OS for Attendece Arise - Modern HR & Analytics</title>
+<title>Arpit OS for Attendance Arise - Modern HR & Analytics</title>
 
 <!-- React & Utilities -->
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<!-- Pinned Babel to a stable version to prevent the 'import' module error -->
-<script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" crossorigin></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Bootstrap 5 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 
 <!-- jsPDF & AutoTable for Verification Dashboard Export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
-<script>
-tailwind.config = {
-    theme: {
-        extend: {
-            fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-            colors: {
-                brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' },
-                status: { p: '#10b981', a: '#ef4444', h: '#f59e0b', default: '#cbd5e1' }
-            }
-        }
-    }
-}
-</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-body { margin: 0; background-color: #f8fafc; overflow: hidden; -webkit-font-smoothing: antialiased; }
+
+:root {
+    --brand-50: #eff6ff;
+    --brand-100: #dbeafe;
+    --brand-500: #3b82f6;
+    --brand-600: #2563eb;
+    --brand-700: #1d4ed8;
+    --brand-900: #1e3a8a;
+    --status-p: #10b981;
+    --status-a: #ef4444;
+    --status-h: #f59e0b;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+}
+
+body { 
+    margin: 0; 
+    background-color: var(--slate-50); 
+    overflow: hidden; 
+    -webkit-font-smoothing: antialiased; 
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--slate-800);
+}
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--slate-400); }
 .hide-scroll::-webkit-scrollbar { display: none; }
 .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-.day-card { transition: all 0.15s ease; outline: none; }
-.day-card:focus, .day-card.focused { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4); transform: translateY(-2px); border-color: #3b82f6; z-index: 10; }
-.modal-overlay { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+
+/* Custom helpers for components */
+.sidebar-panel { width: 320px; min-width: 320px; }
+.bg-brand-50 { background-color: var(--brand-50); }
+.bg-brand-100 { background-color: var(--brand-100); }
+.bg-brand-500 { background-color: var(--brand-500); }
+.bg-brand-600 { background-color: var(--brand-600); }
+.text-brand-500 { color: var(--brand-500); }
+.text-brand-600 { color: var(--brand-600); }
+.text-brand-700 { color: var(--brand-700); }
+.text-brand-900 { color: var(--brand-900); }
+.border-brand-100 { border-color: var(--brand-100); }
+.border-brand-500 { border-color: var(--brand-500); }
+
+.bg-status-p { background-color: var(--status-p); }
+.bg-status-a { background-color: var(--status-a); }
+.bg-status-h { background-color: var(--status-h); }
+.text-status-p { color: var(--status-p); }
+.text-status-a { color: var(--status-a); }
+.text-status-h { color: var(--status-h); }
+
+.border-status-p { border-color: var(--status-p); }
+.border-status-a { border-color: var(--status-a); }
+.border-status-h { border-color: var(--status-h); }
+
+.bg-slate-50 { background-color: var(--slate-50); }
+.bg-slate-100 { background-color: var(--slate-100); }
+.border-slate-100 { border-color: var(--slate-100); }
+.border-slate-200 { border-color: var(--slate-200); }
+
+.font-black { font-weight: 900; }
+.fs-7 { font-size: 0.75rem; }
+.fs-8 { font-size: 0.65rem; }
+
+.day-card { transition: all 0.15s ease; outline: none; border-width: 2px; }
+.day-card:focus, .day-card.focused { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4); transform: translateY(-2px); border-color: var(--brand-500) !important; z-index: 10; }
+
+.custom-modal-overlay { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh; 
+    background-color: rgba(15, 23, 42, 0.6); 
+    backdrop-filter: blur(4px); 
+    z-index: 1050; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.2s; }
 input[type="date"]::-webkit-calendar-picker-indicator:hover, input[type="time"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
 .time-grid::-webkit-scrollbar { width: 6px; }
-.time-grid::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+.time-grid::-webkit-scrollbar-thumb { background: var(--slate-200); border-radius: 10px; }
+
+/* Custom Grids to substitute Tailwind Grid Templates */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+}
+.grid-5-cols {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
 </style>
 </head>
 <body>
 <div id="root"></div>
-
-<!-- Added data-type="module" and data-presets to fix Babel parsing -->
-<script type="text/babel" data-type="module" data-presets="react,env">
+<script type="text/babel">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
 const PWD_KEY = 'arise_sys_pwd';
 const SIG_KEY = 'arise_pdf_signatures'; 
 const MONTH_KEY = 'arise_active_month_v6';
 
-// Support for 2 Isolated Months Configuration
 const MONTHS = [
     { id: 'MAY_2026', label: 'May 2026', short: 'MAY-26', days: 31, weekends: [3, 10, 17, 24, 31], startOffset: 4, dbKey: 'arise_modern_db_v5' },
     { id: 'JUN_2026', label: 'June 2026', short: 'JUN-26', days: 30, weekends: [7, 14, 21, 28], startOffset: 0, dbKey: 'arise_modern_db_jun_26' }
@@ -68,7 +144,6 @@ const MONTHS = [
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-// Date Formatter Helper
 const formatDate = (dStr) => {
     if(!dStr) return "";
     const pts = dStr.split('-');
@@ -76,7 +151,6 @@ const formatDate = (dStr) => {
     return dStr;
 };
 
-// Time Options Generators
 const generateTimeOptions = (startHr, startMin, endHr, endMin) => {
     const times = [];
     let h = startHr, m = startMin;
@@ -90,8 +164,8 @@ const generateTimeOptions = (startHr, startMin, endHr, endMin) => {
     }
     return times;
 };
-const inTimeOptions = generateTimeOptions(8, 30, 11, 0); // 8:30 AM to 11:00 AM
-const outTimeOptions = generateTimeOptions(16, 0, 21, 0); // 4:00 PM to 9:00 PM
+const inTimeOptions = generateTimeOptions(8, 30, 11, 0); 
+const outTimeOptions = generateTimeOptions(16, 0, 21, 0); 
 
 const SUGGESTED_IN_TIMES = ['9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM'];
 const SUGGESTED_OUT_TIMES = ['5:30 PM', '6:00 PM', '6:30 PM', '7:00 PM'];
@@ -105,7 +179,6 @@ const formatTimeInput = (time24) => {
     return `${h}:${m} ${ampm}`;
 };
 
-// Dynamic Computation based on selected Month Configuration
 const compute = (emp, monthConf) => {
     let pr = 0, pOnly = 0, ab = 0, ot = 0, t = 0, wo = 0, h = 0, pMiss = 0;
     let autoWoDays = {};
@@ -172,10 +245,237 @@ const defaultEmp = (monthConf) => {
 };
 
 const Icon = ({ path, className="w-5 h-5" }) => (
-<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={path}></path>
+<svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: '1.25rem', height: '1.25rem' }}>
+<path strokeLinecap="round" strokeLinejoin="round" d={path}></path>
 </svg>
 );
+
+const SystemSettings = ({ db, setDb, activeConf, notify }) => {
+    const [snapshots, setSnapshots] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('arise_snapshots_v2') || '[]'); } catch(e) { return []; }
+    });
+    const [orphanKeys, setOrphanKeys] = useState([]);
+    const fileRef = useRef(null);
+
+    useEffect(() => {
+        const orphans = [];
+        const activeKeys = MONTHS.map(m => m.dbKey);
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('arise_') && k.includes('_db_') && !activeKeys.includes(k)) {
+                try { orphans.push({ key: k, size: (localStorage.getItem(k) || '').length }); } catch(e) {}
+            }
+        }
+        setOrphanKeys(orphans);
+    }, []);
+
+    const saveSnapshot = () => {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB').replace(/\//g, '-');
+        const timeStr = now.toLocaleTimeString('en-US', {hour12: false}).replace(/:/g, '-');
+        const name = `Backup_${dateStr}_${timeStr}`;
+        
+        const newSnap = { id: Date.now().toString(), name, monthLabel: activeConf.label, date: now.toISOString(), data: JSON.stringify(db) };
+        const updated = [newSnap, ...snapshots];
+        setSnapshots(updated);
+        try { localStorage.setItem('arise_snapshots_v2', JSON.stringify(updated)); } 
+        catch(e) { notify("Storage limit reached! Please delete old caches.", "error"); return; }
+        notify(`Saved current data as ${name}`, "success");
+    };
+
+    const deleteSnapshot = (id) => {
+        if(!confirm("Delete this backup permanently?")) return;
+        const updated = snapshots.filter(s => s.id !== id);
+        setSnapshots(updated);
+        localStorage.setItem('arise_snapshots_v2', JSON.stringify(updated));
+        notify("Backup deleted", "success");
+    };
+
+    const exportSnapshot = (snap) => {
+        const blob = new Blob([snap.data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${snap.name}.json`;
+        a.click();
+        notify("Exported successfully!", "success");
+    };
+
+    const restoreSnapshot = (snap) => {
+        if(!confirm(`OVERWRITE current ${activeConf.label} data with ${snap.name}?`)) return;
+        try {
+            const parsed = JSON.parse(snap.data).map(e => compute(e, activeConf));
+            setDb(parsed);
+            notify("Backup restored successfully!", "success");
+        } catch(e) { notify("Failed to restore backup", "error"); }
+    };
+
+    const exportOrphan = (okey) => {
+        const data = localStorage.getItem(okey) || "[]";
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB').replace(/\//g, '-');
+        a.download = `${okey}_${dateStr}.json`;
+        a.click();
+    };
+
+    const restoreOrphan = (okey) => {
+        if(!confirm(`OVERWRITE current ${activeConf.label} data with old cache from ${okey}?`)) return;
+        try {
+            const data = localStorage.getItem(okey) || "[]";
+            const parsed = JSON.parse(data).map(e => compute(e, activeConf));
+            setDb(parsed);
+            notify("Cache data restored successfully!", "success");
+        } catch(e) { notify("Failed to load cache data", "error"); }
+    };
+
+    const deleteOrphan = (okey) => {
+        if(!confirm(`Permanently delete cache ${okey}?`)) return;
+        localStorage.removeItem(okey);
+        setOrphanKeys(orphanKeys.filter(o => o.key !== okey));
+        notify("Old cache cleared", "success");
+    };
+
+    const handleImportFile = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const parsed = JSON.parse(ev.target.result).map(emp => compute(emp, activeConf));
+                if (confirm(`Load this file into ${activeConf.label}?`)) {
+                    setDb(parsed);
+                    notify("Loaded from file successfully!", "success");
+                }
+            } catch(err) { notify("Invalid JSON backup file format.", "error"); }
+            if (fileRef.current) fileRef.current.value = "";
+        };
+        reader.readAsText(file);
+    };
+
+    return (
+        <div className="flex-grow-1 overflow-y-auto p-4 hide-scroll bg-slate-50 d-flex flex-column gap-4">
+            <div>
+                <h2 className="h3 font-black text-slate-900 tracking-tight m-0">System Settings & Cache Management</h2>
+                <p className="small text-muted font-semibold mt-1">Manage backups, retrieve old cache files, and secure your memory data.</p>
+            </div>
+
+            <div className="row g-4">
+                <div className="col-12 col-lg-6">
+                    <div className="card h-100 p-4 shadow-sm border-0 bg-white">
+                        <div className="d-flex align-items-center gap-3 mb-4">
+                            <div className="p-3 rounded-3 bg-brand-50 text-brand-600 d-flex align-items-center justify-content-center">
+                                <Icon path="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </div>
+                            <div>
+                                <h3 className="h5 font-black text-slate-800 m-0">Current Data Backup</h3>
+                                <p className="small text-muted m-0">Save your active month data instantly.</p>
+                            </div>
+                        </div>
+                        <button onClick={saveSnapshot} className="btn btn-primary font-black py-3 w-100 shadow-sm">
+                            Save Current State as Snapshot
+                        </button>
+                        
+                        <div className="mt-4 pt-3 border-top border-slate-100">
+                            <h4 className="fs-8 font-black text-slate-400 text-uppercase tracking-widest mb-3">Import Backups From File</h4>
+                            <input type="file" accept=".json" onChange={handleImportFile} ref={fileRef} className="d-none" />
+                            <button onClick={() => fileRef.current?.click()} className="btn btn-outline-secondary py-3 w-100 border-dashed d-flex align-items-center justify-content-center gap-2">
+                                <Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /> 
+                                Select Backup .JSON File to Restore
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="col-12 col-lg-6">
+                    <div className="card h-100 p-4 shadow-sm border-0 bg-white d-flex flex-column">
+                        <div className="d-flex align-items-center justify-content-between mb-4">
+                            <div className="d-flex align-items-center gap-3">
+                                <div className="p-3 rounded-3 bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center">
+                                    <Icon path="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                </div>
+                                <div>
+                                    <h3 className="h5 font-black text-slate-800 m-0">Old Cache / DB Files</h3>
+                                    <p className="small text-muted m-0">Found {orphanKeys.length} legacy databases memory.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex-grow-1 overflow-y-auto pr-2 hide-scroll" style={{ maxHeight: '250px' }}>
+                            {orphanKeys.length === 0 ? (
+                                <p className="small text-muted text-center py-4 border border-dashed border-slate-100 rounded-3">No old cache files found.</p>
+                            ) : orphanKeys.map(ok => (
+                                <div key={ok.key} className="p-3 border border-slate-100 rounded-3 bg-slate-50 mb-2">
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <span className="fs-7 font-black text-slate-700 text-truncate" style={{ maxWidth: '180px' }} title={ok.key}>{ok.key}</span>
+                                        <span className="fs-8 font-black text-slate-400 bg-white px-2 py-0.5 rounded shadow-sm border">{(ok.size / 1024).toFixed(1)} KB</span>
+                                    </div>
+                                    <div className="d-flex gap-2">
+                                        <button onClick={() => restoreOrphan(ok.key)} className="btn btn-sm btn-white border flex-grow-1 text-brand-600 font-bold">Select / View</button>
+                                        <button onClick={() => exportOrphan(ok.key)} className="btn btn-sm btn-white border flex-grow-1 text-success font-bold">Export File</button>
+                                        <button onClick={() => deleteOrphan(ok.key)} className="btn btn-sm btn-white border text-danger px-3"><Icon path="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="card p-4 shadow-sm border-0 bg-white d-flex flex-column flex-grow-1">
+                <h3 className="h5 font-black text-slate-800 mb-4 d-flex align-items-center gap-2">
+                    <Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" className="text-brand-500"/> In-App Saved Snapshots
+                </h3>
+                
+                {snapshots.length === 0 ? (
+                    <div className="text-center py-5 bg-slate-50 rounded-3 border border-dashed flex-grow-1 d-flex flex-column align-items-center justify-content-center">
+                        <p className="small text-muted font-bold m-0">No backups saved yet.</p>
+                        <p className="fs-7 text-muted font-semibold mt-1">Use the "Save Current State as Snapshot" button to create one.</p>
+                    </div>
+                ) : (
+                    <div className="table-responsive flex-grow-1 border border-slate-100 rounded-3">
+                        <table className="table table-hover align-middle m-0 text-left">
+                            <thead className="table-light fs-8 text-uppercase tracking-wider text-slate-500">
+                                <tr>
+                                    <th className="p-3 font-black">Backup File Name</th>
+                                    <th className="p-3 font-black">Month Config</th>
+                                    <th className="p-3 font-black">Date & Time</th>
+                                    <th className="p-3 font-black text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="fs-7 text-slate-700">
+                                {snapshots.map(snap => {
+                                    const d = new Date(snap.date);
+                                    return (
+                                        <tr key={snap.id}>
+                                            <td className="p-3 font-bold text-slate-800">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <Icon path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" className="text-brand-500" />
+                                                    {snap.name}
+                                                </div>
+                                            </td>
+                                            <td className="p-3"><span className="bg-light px-2 py-1 rounded fs-8 font-black border">{snap.monthLabel || "Unknown"}</span></td>
+                                            <td className="p-3 font-bold text-slate-600">{d.toLocaleDateString()} {d.toLocaleTimeString()}</td>
+                                            <td className="p-3 text-end">
+                                                <div className="d-flex gap-2 justify-content-end">
+                                                    <button onClick={() => restoreSnapshot(snap)} className="btn btn-sm btn-light text-brand-600 font-bold border">Select / Restore</button>
+                                                    <button onClick={() => exportSnapshot(snap)} className="btn btn-sm btn-light text-success font-bold border">Export File</button>
+                                                    <button onClick={() => deleteSnapshot(snap.id)} className="btn btn-sm btn-light text-danger border" title="Delete"><Icon path="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const OwnerDashboard = ({ db, activeConf }) => {
     const stats = useMemo(() => {
@@ -210,11 +510,11 @@ const OwnerDashboard = ({ db, activeConf }) => {
         const sortedDepts = Object.entries(deptCosts).sort((a,b) => b[1] - a[1]);
 
         const insights = [];
-        if (attRate < 85 && db.length > 0) insights.push({ type: 'warning', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', title: 'High Absenteeism Rate', msg: `Overall attendance is at ${attRate}%. Consider reviewing leave patterns or issues affecting the workforce.` });
-        if (totalOTCost > (totalBasic * 0.15) && db.length > 0) insights.push({ type: 'error', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200', title: 'Excessive Overtime Costs', msg: `OT accounts for >15% of basic payroll (₹${totalOTCost.toLocaleString(undefined, {maximumFractionDigits:0})}). Consider adjusting shift timings to reduce burnout.` });
-        if (totalMissingPunches > (db.length * 1.5) && db.length > 0) insights.push({ type: 'info', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200', title: 'Frequent Missing Punches', msg: `Detected ${totalMissingPunches} missing punch-outs (P?). Enforce stricter punch rules.` });
-        if (totalAdvance > (totalEarned * 0.2) && db.length > 0) insights.push({ type: 'warning', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', title: 'High Advance Dependency', msg: 'Employees have requested over 20% of their earned salaries as advance payments. Review loan policies.' });
-        if (insights.length === 0 && db.length > 0) insights.push({ type: 'success', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', title: 'System Healthy', msg: 'Payroll and attendance metrics are well within healthy operational thresholds. No critical actions required.' });
+        if (attRate < 85 && db.length > 0) insights.push({ type: 'warning', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'text-warning', bg: 'bg-warning bg-opacity-10', border: 'border-warning', title: 'High Absenteeism Rate', msg: `Overall attendance is at ${attRate}%. Consider reviewing leave patterns or issues affecting the workforce.` });
+        if (totalOTCost > (totalBasic * 0.15) && db.length > 0) insights.push({ type: 'error', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', color: 'text-danger', bg: 'bg-danger bg-opacity-10', border: 'border-danger', title: 'Excessive Overtime Costs', msg: `OT accounts for >15% of basic payroll (₹${totalOTCost.toLocaleString(undefined, {maximumFractionDigits:0})}). Consider adjusting shift timings to reduce burnout.` });
+        if (totalMissingPunches > (db.length * 1.5) && db.length > 0) insights.push({ type: 'info', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', color: 'text-info', bg: 'bg-info bg-opacity-10', border: 'border-info', title: 'Frequent Missing Punches', msg: `Detected ${totalMissingPunches} missing punch-outs (P?). Enforce stricter punch rules.` });
+        if (totalAdvance > (totalEarned * 0.2) && db.length > 0) insights.push({ type: 'warning', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-secondary', bg: 'bg-secondary bg-opacity-10', border: 'border-secondary', title: 'High Advance Dependency', msg: 'Employees have requested over 20% of their earned salaries as advance payments. Review loan policies.' });
+        if (insights.length === 0 && db.length > 0) insights.push({ type: 'success', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-success', bg: 'bg-success bg-opacity-10', border: 'border-success', title: 'System Healthy', msg: 'Payroll and attendance metrics are well within healthy operational thresholds. No critical actions required.' });
 
         const topAbsent = [...db].sort((a, b) => (parseFloat(b.absent)||0) - (parseFloat(a.absent)||0)).slice(0, 5).filter(e => e.absent > 0);
         const topOT = [...db].sort((a, b) => (parseFloat(b.otHrs)||0) - (parseFloat(a.otHrs)||0)).slice(0, 5).filter(e => e.otHrs > 0);
@@ -223,180 +523,211 @@ const OwnerDashboard = ({ db, activeConf }) => {
     }, [db, activeConf]);
 
     return (
-        <div className="flex-1 overflow-y-auto p-8 hide-scroll bg-slate-50 flex flex-col gap-6">
-            <div className="flex justify-between items-end mb-2">
+        <div className="flex-grow-1 overflow-y-auto p-4 hide-scroll bg-slate-50 d-flex flex-column gap-4">
+            <div className="d-flex justify-content-between align-items-end mb-2">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">Executive Analytics</h2>
-                    <p className="text-sm font-semibold text-slate-500 mt-1">Detailed financial and operational overview for {activeConf.label}.</p>
+                    <h2 className="h3 font-black text-slate-900 tracking-tight m-0">Executive Analytics</h2>
+                    <p className="small text-muted font-semibold mt-1 m-0">Detailed financial and operational overview for {activeConf.label}.</p>
                 </div>
-                <div className="text-xs font-bold text-slate-400 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <div className="fs-8 font-black text-slate-500 bg-white px-3 py-2 rounded-3 border shadow-sm d-flex align-items-center gap-2">
+                    <div className="rounded-circle bg-success" style={{ width: '8px', height: '8px' }}></div>
                     Live Data
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                <div className="bg-white border-l-4 border-l-brand-500 border-y border-r border-slate-200 p-6 rounded-r-2xl shadow-sm flex flex-col justify-between group hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                        <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center group-hover:scale-110 transition duration-300"><Icon path="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></div>
-                        <span className="text-[10px] font-black bg-brand-100 text-brand-700 px-2 py-0.5 rounded-md">PAYOUT</span>
-                    </div>
-                    <div>
-                        <div className="text-3xl font-black text-slate-800 tracking-tight mb-1">₹{stats.totalPayout.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                        <p className="text-xs font-semibold text-slate-400">Net payable after deductions</p>
-                    </div>
-                </div>
-
-                <div className="bg-white border-l-4 border-l-rose-500 border-y border-r border-slate-200 p-6 rounded-r-2xl shadow-sm flex flex-col justify-between group hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                        <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center group-hover:scale-110 transition duration-300"><Icon path="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/></div>
-                        <span className="text-[10px] font-black bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md">ADVANCE</span>
-                    </div>
-                    <div>
-                        <div className="text-3xl font-black text-rose-600 tracking-tight mb-1">₹{stats.totalAdvance.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                        <p className="text-xs font-semibold text-slate-400">Total advances to deduct</p>
+            <div className="row g-3">
+                <div className="col-12 col-md-6 col-lg-3">
+                    <div className="card h-100 p-4 border-0 border-start border-4 border-brand-500 shadow-sm bg-white d-flex flex-column justify-content-between">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                            <div className="p-2 rounded-3 bg-brand-50 text-brand-500 d-flex align-items-center justify-content-center">
+                                <Icon path="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </div>
+                            <span className="fs-8 font-black bg-brand-100 text-brand-700 px-2 py-0.5 rounded">PAYOUT</span>
+                        </div>
+                        <div>
+                            <div className="h3 font-black text-slate-800 tracking-tight mb-1">₹{stats.totalPayout.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                            <p className="fs-7 text-muted font-semibold m-0">Net payable after deductions</p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white border-l-4 border-l-amber-500 border-y border-r border-slate-200 p-6 rounded-r-2xl shadow-sm flex flex-col justify-between group hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                        <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center group-hover:scale-110 transition duration-300"><Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></div>
-                        <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md">O.T COST</span>
-                    </div>
-                    <div>
-                        <div className="text-3xl font-black text-amber-600 tracking-tight mb-1">₹{stats.totalOTCost.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                        <p className="text-xs font-semibold text-slate-400">Across {stats.totalOTHours} total hours logged</p>
+                <div className="col-12 col-md-6 col-lg-3">
+                    <div className="card h-100 p-4 border-0 border-start border-4 border-danger shadow-sm bg-white d-flex flex-column justify-content-between">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                            <div className="p-2 rounded-3 bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center">
+                                <Icon path="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
+                            </div>
+                            <span className="fs-8 font-black bg-danger bg-opacity-10 text-danger px-2 py-0.5 rounded">ADVANCE</span>
+                        </div>
+                        <div>
+                            <div className="h3 font-black text-danger tracking-tight mb-1">₹{stats.totalAdvance.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                            <p className="fs-7 text-muted font-semibold m-0">Total advances to deduct</p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white border-l-4 border-l-emerald-500 border-y border-r border-slate-200 p-6 rounded-r-2xl shadow-sm flex flex-col justify-between group hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center group-hover:scale-110 transition duration-300"><Icon path="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></div>
-                        <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md">ATTENDANCE</span>
+                <div className="col-12 col-md-6 col-lg-3">
+                    <div className="card h-100 p-4 border-0 border-start border-4 border-warning shadow-sm bg-white d-flex flex-column justify-content-between">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                            <div className="p-2 rounded-3 bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center">
+                                <Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </div>
+                            <span className="fs-8 font-black bg-warning bg-opacity-10 text-warning px-2 py-0.5 rounded">O.T COST</span>
+                        </div>
+                        <div>
+                            <div className="h3 font-black text-warning tracking-tight mb-1">₹{stats.totalOTCost.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                            <p className="fs-7 text-muted font-semibold m-0">Across {stats.totalOTHours} total hours logged</p>
+                        </div>
                     </div>
-                    <div>
-                        <div className="text-3xl font-black text-emerald-600 tracking-tight mb-1">{stats.attRate}%</div>
-                        <p className="text-xs font-semibold text-slate-400">Overall operational strength</p>
+                </div>
+
+                <div className="col-12 col-md-6 col-lg-3">
+                    <div className="card h-100 p-4 border-0 border-start border-4 border-success shadow-sm bg-white d-flex flex-column justify-content-between">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                            <div className="p-2 rounded-3 bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center">
+                                <Icon path="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </div>
+                            <span className="fs-8 font-black bg-success bg-opacity-10 text-success px-2 py-0.5 rounded">ATTENDANCE</span>
+                        </div>
+                        <div>
+                            <div className="h3 font-black text-success tracking-tight mb-1">{stats.attRate}%</div>
+                            <p className="fs-7 text-muted font-semibold m-0">Overall operational strength</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none"><Icon path="M13 10V3L4 14h7v7l9-11h-7z" className="w-32 h-32"/></div>
-                <h3 className="text-lg font-black text-slate-800 mb-5 flex items-center gap-2 relative z-10"><Icon path="M13 10V3L4 14h7v7l9-11h-7z" className="text-brand-500"/> System Insights & Recommendations</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+            <div className="card p-4 shadow-sm border-0 bg-white">
+                <h3 className="h5 font-black text-slate-800 mb-4 d-flex align-items-center gap-2">
+                    <Icon path="M13 10V3L4 14h7v7l9-11h-7z" className="text-brand-500"/> System Insights & Recommendations
+                </h3>
+                <div className="row g-3">
                     {stats.insights.length === 0 ? (
-                        <div className="col-span-2 text-sm text-slate-400 font-medium p-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">Not enough data to generate insights yet.</div>
+                        <div className="col-12 text-center text-muted py-4 border border-dashed rounded-3 small">Not enough data to generate insights yet.</div>
                     ) : stats.insights.map((ins, idx) => (
-                        <div key={idx} className={`p-4 rounded-xl border-l-4 ${ins.bg} ${ins.border.replace('border-', 'border-l-').replace('border-200', '500')} border-y border-r border-slate-100 flex items-start gap-4 shadow-sm hover:-translate-y-0.5 transition-transform`}>
-                            <div className={`mt-0.5 ${ins.color} bg-white p-2 rounded-lg shadow-sm`}><Icon path={ins.icon} className="w-5 h-5"/></div>
-                            <div>
-                                <h4 className={`text-sm font-black ${ins.color} mb-1 tracking-tight`}>{ins.title}</h4>
-                                <p className={`text-xs font-bold text-slate-600 leading-relaxed`}>{ins.msg}</p>
+                        <div key={idx} className="col-12 col-md-6">
+                            <div className={`p-3 rounded-3 border-start border-4 ${ins.bg} ${ins.border} d-flex align-items-start gap-3 h-100 shadow-sm`}>
+                                <div className={`p-2 rounded-3 bg-white shadow-sm ${ins.color}`}><Icon path={ins.icon}/></div>
+                                <div>
+                                    <h4 className={`fs-7 font-black ${ins.color} mb-1`}>{ins.title}</h4>
+                                    <p className="fs-8 text-muted font-bold m-0 leading-relaxed">{ins.msg}</p>
+                                </div>
                             </div>
                         </div>
                     ))}
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 lg:col-span-1 flex flex-col">
-                    <h3 className="text-xs font-black text-slate-400 mb-5 uppercase tracking-widest">Department Costs</h3>
-                    <div className="space-y-5 flex-1">
-                        {stats.sortedDepts.length === 0 ? <p className="text-xs text-slate-400 font-bold text-center mt-10">No data.</p> : stats.sortedDepts.map(([dept, cost], idx) => {
-                            const max = stats.sortedDepts[0][1] || 1;
-                            const pct = ((cost / max) * 100).toFixed(0);
-                            return (
-                                <div key={idx}>
-                                    <div className="flex justify-between items-end text-xs font-bold mb-1.5">
-                                        <span className="text-slate-700 truncate pr-2 uppercase tracking-wide">{dept}</span>
-                                        <div className="text-right">
+            <div className="row g-4">
+                <div className="col-12 col-lg-4">
+                    <div className="card h-100 p-4 shadow-sm border-0 bg-white d-flex flex-column">
+                        <h3 className="fs-8 font-black text-slate-400 mb-4 text-uppercase tracking-widest">Department Costs</h3>
+                        <div className="d-flex flex-column gap-4 flex-grow-1">
+                            {stats.sortedDepts.length === 0 ? (
+                                <p className="fs-7 text-muted font-bold text-center my-4">No data.</p>
+                            ) : stats.sortedDepts.map(([dept, cost], idx) => {
+                                const max = stats.sortedDepts[0][1] || 1;
+                                const pct = ((cost / max) * 100).toFixed(0);
+                                return (
+                                    <div key={idx}>
+                                        <div className="d-flex justify-content-between align-items-end fs-8 font-bold mb-2">
+                                            <span className="text-slate-700 text-truncate text-uppercase tracking-wide" style={{ maxWidth: '140px' }}>{dept}</span>
                                             <span className="text-slate-900 font-black">₹{cost.toLocaleString(undefined, {maximumFractionDigits:0})}</span>
                                         </div>
+                                        <div className="progress" style={{ height: '8px' }}>
+                                            <div className="progress-bar bg-brand-500" role="progressbar" style={{ width: `${pct}%` }} aria-valuenow={pct} aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
                                     </div>
-                                    <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex">
-                                        <div className="bg-brand-500 h-2.5 rounded-full" style={{ width: `${pct}%` }}></div>
-                                    </div>
-                                </div>
-                            )
-                        })}
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 flex flex-col">
-                    <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Top Absentees</h3>
-                        <span className="text-[10px] font-black bg-rose-100 text-rose-600 px-2 py-0.5 rounded-md">CRITICAL</span>
-                    </div>
-                    <div className="space-y-3 flex-1">
-                        {stats.topAbsent.length === 0 ? <p className="text-xs text-slate-400 font-bold text-center mt-10">No absentees logged.</p> : stats.topAbsent.map((e, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-white border border-slate-100 shadow-sm rounded-xl hover:border-rose-200 transition">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-black text-xs border border-rose-100">{e.name.charAt(0)}</div>
-                                    <div className="flex flex-col">
-                                        <span className="text-xs font-black text-slate-800 truncate w-24 sm:w-32">{e.name}</span>
-                                        <span className="text-[10px] font-bold text-slate-400">{e.dept}</span>
+                <div className="col-12 col-lg-4">
+                    <div className="card h-100 p-4 shadow-sm border-0 bg-white d-flex flex-column">
+                        <div className="d-flex align-items-center justify-content-between mb-4">
+                            <h3 className="fs-8 font-black text-slate-400 m-0 text-uppercase tracking-widest">Top Absentees</h3>
+                            <span className="fs-8 font-black bg-danger bg-opacity-10 text-danger px-2 py-0.5 rounded">CRITICAL</span>
+                        </div>
+                        <div className="d-flex flex-column gap-2 flex-grow-1">
+                            {stats.topAbsent.length === 0 ? (
+                                <p className="fs-7 text-muted font-bold text-center my-4">No absentees logged.</p>
+                            ) : stats.topAbsent.map((e, idx) => (
+                                <div key={idx} className="d-flex align-items-center justify-content-between p-3 bg-white border rounded-3 shadow-sm">
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="rounded-circle bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center font-black fs-7" style={{ width: '36px', height: '36px' }}>{e.name.charAt(0)}</div>
+                                        <div className="d-flex flex-column">
+                                            <span className="fs-7 font-black text-slate-800 text-truncate" style={{ maxWidth: '120px' }}>{e.name}</span>
+                                            <span className="fs-8 font-bold text-slate-400">{e.dept}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-end d-flex flex-column align-items-end">
+                                        <span className="fs-7 font-black text-danger">{e.absent} Days</span>
+                                        <span className="fs-8 font-bold text-slate-400">Loss: ₹{((parseFloat(e.absent)||0) * (parseFloat(e.perDaySalary)||0)).toLocaleString(undefined, {maximumFractionDigits:0})}</span>
                                     </div>
                                 </div>
-                                <div className="text-right flex flex-col items-end">
-                                    <span className="text-sm font-black text-rose-600">{e.absent} Days</span>
-                                    <span className="text-[10px] font-bold text-slate-400">Loss: ₹{((parseFloat(e.absent)||0) * (parseFloat(e.perDaySalary)||0)).toLocaleString(undefined, {maximumFractionDigits:0})}</span>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 flex flex-col">
-                    <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Highest OT Logged</h3>
-                        <span className="text-[10px] font-black bg-brand-100 text-brand-600 px-2 py-0.5 rounded-md">REVIEW</span>
-                    </div>
-                    <div className="space-y-3 flex-1">
-                        {stats.topOT.length === 0 ? <p className="text-xs text-slate-400 font-bold text-center mt-10">No overtime logged.</p> : stats.topOT.map((e, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-white border border-slate-100 shadow-sm rounded-xl hover:border-brand-200 transition">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center font-black text-xs border border-brand-100">{e.name.charAt(0)}</div>
-                                    <div className="flex flex-col">
-                                        <span className="text-xs font-black text-slate-800 truncate w-24 sm:w-32">{e.name}</span>
-                                        <span className="text-[10px] font-bold text-slate-400">{e.dept}</span>
+                <div className="col-12 col-lg-4">
+                    <div className="card h-100 p-4 shadow-sm border-0 bg-white d-flex flex-column">
+                        <div className="d-flex align-items-center justify-content-between mb-4">
+                            <h3 className="fs-8 font-black text-slate-400 m-0 text-uppercase tracking-widest">Highest OT Logged</h3>
+                            <span className="fs-8 font-black bg-brand-100 text-brand-600 px-2 py-0.5 rounded">REVIEW</span>
+                        </div>
+                        <div className="d-flex flex-column gap-2 flex-grow-1">
+                            {stats.topOT.length === 0 ? (
+                                <p className="fs-7 text-muted font-bold text-center my-4">No overtime logged.</p>
+                            ) : stats.topOT.map((e, idx) => (
+                                <div key={idx} className="d-flex align-items-center justify-content-between p-3 bg-white border rounded-3 shadow-sm">
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="rounded-circle bg-brand-50 text-brand-600 d-flex align-items-center justify-content-center font-black fs-7" style={{ width: '36px', height: '36px' }}>{e.name.charAt(0)}</div>
+                                        <div className="d-flex flex-column">
+                                            <span className="fs-7 font-black text-slate-800 text-truncate" style={{ maxWidth: '120px' }}>{e.name}</span>
+                                            <span className="fs-8 font-bold text-slate-400">{e.dept}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-end d-flex flex-column align-items-end">
+                                        <span className="fs-7 font-black text-brand-600">{e.otHrs} Hrs</span>
+                                        <span className="fs-8 font-bold text-slate-400">Cost: ₹{(parseFloat(e.dailyOtSalary)||0).toLocaleString(undefined, {maximumFractionDigits:0})}</span>
                                     </div>
                                 </div>
-                                <div className="text-right flex flex-col items-end">
-                                    <span className="text-sm font-black text-brand-600">{e.otHrs} Hrs</span>
-                                    <span className="text-[10px] font-bold text-slate-400">Cost: ₹{(parseFloat(e.dailyOtSalary)||0).toLocaleString(undefined, {maximumFractionDigits:0})}</span>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* NEW JOINERS SECTION */}
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mt-6">
-                <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2"><Icon path="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" className="text-brand-500"/> New Joiners <span className="bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full text-xs">{stats.newJoiners.length}</span></h3>
+            <div className="card p-4 shadow-sm border-0 bg-white mt-4">
+                <div className="d-flex align-items-center justify-content-between mb-4">
+                    <h3 className="h6 font-black text-slate-800 m-0 text-uppercase tracking-widest d-flex align-items-center gap-2">
+                        <Icon path="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" className="text-brand-500"/> 
+                        New Joiners <span className="badge bg-brand-100 text-brand-700 rounded-pill">{stats.newJoiners.length}</span>
+                    </h3>
                 </div>
                 {stats.newJoiners.length === 0 ? (
-                    <div className="text-center p-6 text-sm text-slate-400 font-medium border border-dashed border-slate-200 rounded-xl bg-slate-50">No new joiners logged with a joining date.</div>
+                    <div className="text-center p-4 fs-7 text-muted font-bold border border-dashed rounded-3 bg-slate-50">No new joiners logged with a joining date.</div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500">
+                    <div className="table-responsive">
+                        <table className="table table-hover align-middle m-0 text-left">
+                            <thead className="table-light fs-8 text-uppercase tracking-wider text-slate-500">
                                 <tr>
-                                    <th className="p-3 font-black rounded-tl-lg">Employee Name</th>
+                                    <th className="p-3 font-black">Employee Name</th>
                                     <th className="p-3 font-black">Department</th>
                                     <th className="p-3 font-black">Joining Date</th>
-                                    <th className="p-3 font-black rounded-tr-lg">Basic Salary</th>
+                                    <th className="p-3 font-black">Basic Salary</th>
                                 </tr>
                             </thead>
-                            <tbody className="text-sm font-medium text-slate-700">
+                            <tbody className="fs-7 text-slate-700">
                                 {stats.newJoiners.map((nj, i) => (
-                                    <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition">
+                                    <tr key={i}>
                                         <td className="p-3 font-bold text-slate-800">{nj.name}</td>
-                                        <td className="p-3 text-xs text-slate-500">{nj.dept}</td>
-                                        <td className="p-3 text-xs font-bold text-brand-600">{formatDate(nj.joiningDate)}</td>
-                                        <td className="p-3 text-xs font-bold text-slate-800">₹{(parseFloat(nj.basicSalary)||0).toLocaleString()}</td>
+                                        <td className="p-3 text-muted fs-8">{nj.dept}</td>
+                                        <td className="p-3 font-bold text-brand-600">{formatDate(nj.joiningDate)}</td>
+                                        <td className="p-3 font-bold text-slate-800">₹{(parseFloat(nj.basicSalary)||0).toLocaleString()}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -411,17 +742,30 @@ const OwnerDashboard = ({ db, activeConf }) => {
 const App = () => {
 const [auth, setAuth] = useState(() => {
     const savedPwd = localStorage.getItem(PWD_KEY);
-    return { isLocked: true, hasPassword: !!savedPwd, password: savedPwd ? atob(savedPwd) : "" };
+    let pwd = "";
+    let hasPwd = !!savedPwd;
+    if (savedPwd) {
+        try { 
+            pwd = atob(savedPwd); 
+        } catch(e) { 
+            pwd = savedPwd; 
+            try { localStorage.setItem(PWD_KEY, btoa(pwd)); } catch(err){}
+        }
+    }
+    return { isLocked: true, hasPassword: hasPwd, password: pwd };
 });
 const [passInput, setPassInput] = useState("");
 
-// Multi-Month DB Architecture
-const [activeMonthKey, setActiveMonthKey] = useState(() => localStorage.getItem(MONTH_KEY) || MONTHS[0].id);
+const [activeMonthKey, setActiveMonthKey] = useState(() => {
+    try { return localStorage.getItem(MONTH_KEY) || MONTHS[0].id; } 
+    catch(e) { return MONTHS[0].id; }
+});
 
 const [dbs, setDbs] = useState(() => {
     const loaded = {};
     MONTHS.forEach(m => {
-        const saved = localStorage.getItem(m.dbKey);
+        let saved = null;
+        try { saved = localStorage.getItem(m.dbKey); } catch(e) {}
         if (saved) { 
             try { loaded[m.id] = JSON.parse(saved).map(e => compute(e, m)); } 
             catch(e){ loaded[m.id] = []; } 
@@ -435,11 +779,10 @@ const [dbs, setDbs] = useState(() => {
 const activeConf = useMemo(() => MONTHS.find(m => m.id === activeMonthKey), [activeMonthKey]);
 const db = useMemo(() => dbs[activeMonthKey] || [], [dbs, activeMonthKey]);
 
-// Effect hooks for persistence
-useEffect(() => { localStorage.setItem(MONTH_KEY, activeMonthKey); }, [activeMonthKey]);
+useEffect(() => { try{ localStorage.setItem(MONTH_KEY, activeMonthKey); } catch(e){} }, [activeMonthKey]);
 useEffect(() => { 
     MONTHS.forEach(m => {
-        localStorage.setItem(m.dbKey, JSON.stringify(dbs[m.id]));
+        try { localStorage.setItem(m.dbKey, JSON.stringify(dbs[m.id])); } catch(e){}
     });
 }, [dbs]);
 
@@ -450,28 +793,30 @@ const setDb = useCallback((newDbOrFn) => {
     });
 }, [activeMonthKey]);
 
-const [activeTab, useState] = React.useState("employees");
-const [logDate, setLogDate] = React.useState(1);
-const [selectedId, setSelectedId] = React.useState(null);
-const [search, setSearch] = React.useState("");
-const [focusDay, setFocusDay] = React.useState(null);
-const [otModal, setOtModal] = React.useState({ show: false, day: null, val: "" });
-const [commentModal, setCommentModal] = React.useState({ show: false, day: null, val: "" });
-const [pdfModal, setPdfModal] = React.useState({ show: false, hideBasic: false }); 
-const [timeModal, setTimeModal] = React.useState({ show: false, day: null, step: 'in', inVal: '', outVal: '', custom: '' });
+const [activeTab, setActiveTab] = useState("employees");
+const [logDate, setLogDate] = useState(1);
+const [selectedId, setSelectedId] = useState(null);
+const [search, setSearch] = useState("");
+const [focusDay, setFocusDay] = useState(null);
+const [otModal, setOtModal] = useState({ show: false, day: null, val: "" });
+const [commentModal, setCommentModal] = useState({ show: false, day: null, val: "" });
+const [pdfModal, setPdfModal] = useState({ show: false, hideBasic: false }); 
+const [timeModal, setTimeModal] = useState({ show: false, day: null, step: 'in', inVal: '', outVal: '', custom: '' });
 
-const [pdfSigs, setPdfSigs] = React.useState(() => {
+const [pdfSigs, setPdfSigs] = useState(() => {
     const saved = localStorage.getItem(SIG_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+        try { return JSON.parse(saved); } catch(e) {}
+    }
     return { prep: "MR. ARPIT MISHRA", rech: "MR. AMIT SINGH", ver: "MR. KUNAL CHANCHAL", app: "MR. MS SIR" };
 });
 
-const [toast, setToast] = React.useState(null);
+const [toast, setToast] = useState(null);
 const fileRef = useRef(null);
 const otInputRef = useRef(null);
 const commentInputRef = useRef(null);
 
-useEffect(() => { localStorage.setItem(SIG_KEY, JSON.stringify(pdfSigs)); }, [pdfSigs]); 
+useEffect(() => { try { localStorage.setItem(SIG_KEY, JSON.stringify(pdfSigs)); }catch(e){} }, [pdfSigs]); 
 useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); } }, [toast]);
 useEffect(() => { if (otModal.show && otInputRef.current) { otInputRef.current.focus(); otInputRef.current.select(); } }, [otModal.show]);
 useEffect(() => { if (commentModal.show && commentInputRef.current) { commentInputRef.current.focus(); } }, [commentModal.show]);
@@ -487,7 +832,7 @@ useEffect(() => {
         }
     };
     window.addEventListener('keydown', handleGlobalEsc);
-    return () => window.removeEventListener('keydown', handleGlobalEsc);
+    return () => window.removeIntersection?.() || window.removeEventListener('keydown', handleGlobalEsc);
 }, [otModal.show, commentModal.show, pdfModal.show, timeModal.show, activeTab]);
 
 const notify = (msg, type="success") => setToast({ msg, type });
@@ -496,7 +841,7 @@ const handleLogin = (e) => {
     e.preventDefault();
     if (!auth.hasPassword) {
         if(!passInput) return notify("Password cannot be empty!", "error");
-        localStorage.setItem(PWD_KEY, btoa(passInput));
+        try { localStorage.setItem(PWD_KEY, btoa(passInput)); } catch(e){}
         setAuth({ isLocked: false, hasPassword: true, password: passInput });
         setPassInput("");
         notify("Master password created successfully!", "success");
@@ -679,7 +1024,7 @@ const handleExportExcel = () => {
 
         XLSX.utils.book_append_sheet(wb, ws, activeConf.short);
         XLSX.writeFile(wb, `Arise_Attendance_${activeConf.short}.xlsx`);
-        notify("Formula-based Excel Exported!", "success");
+        notify("Excel Export completed!", "success");
     } catch(err) { notify("Failed to export Excel", "error"); console.error(err); }
 };
 
@@ -689,10 +1034,9 @@ const handleExportInOutExcel = () => {
         const wb = XLSX.utils.book_new();
         const aoa = [];
 
-        // Colors based on requested layout
-        const CLR_HEADER = { rgb: "203780" }; // Dark Blue
+        const CLR_HEADER = { rgb: "203780" }; 
         const CLR_WHITE = { rgb: "FFFFFF" };
-        const CLR_WEEKEND = { rgb: "D9EAD3" }; // Light Green
+        const CLR_WEEKEND = { rgb: "D9EAD3" }; 
 
         const BORDER_TOP = { top: { style: "thin", color: { rgb: "000000" } } };
         const BORDER_BOTTOM = { bottom: { style: "thin", color: { rgb: "000000" } } };
@@ -700,10 +1044,7 @@ const handleExportInOutExcel = () => {
         const BORDER_RIGHT = { right: { style: "thin", color: { rgb: "000000" } } };
         const BORDER_DOTTED_BOTTOM = { bottom: { style: "dotted", color: { rgb: "888888" } } };
         const BORDER_DOTTED_TOP = { top: { style: "dotted", color: { rgb: "888888" } } };
-
         const BORDER_FULL = { ...BORDER_TOP, ...BORDER_BOTTOM, ...BORDER_LEFT, ...BORDER_RIGHT };
-        
-        // Borders for split rows
         const BORDER_IN_ROW = { ...BORDER_TOP, ...BORDER_LEFT, ...BORDER_RIGHT, ...BORDER_DOTTED_BOTTOM };
         const BORDER_OUT_ROW = { ...BORDER_LEFT, ...BORDER_RIGHT, ...BORDER_BOTTOM, ...BORDER_DOTTED_TOP };
 
@@ -719,22 +1060,19 @@ const handleExportInOutExcel = () => {
             return { v: val === undefined || val === null ? "" : val, t: "s", s: style };
         };
 
-        const totalCols = 2 + activeConf.days; // Sr, Name, Days 1..N
+        const totalCols = 2 + activeConf.days;
         const merges = [];
 
-        // Row 1: Company Name
         const row1 = [ { v: "ARISE CONSTRUCTION EQUIPMENT", t: "s", s: { alignment: { horizontal: "center", vertical: "center" }, font: { bold: true, sz: 16, color: CLR_WHITE }, fill: { fgColor: CLR_HEADER } } } ];
         for(let i=1; i<totalCols; i++) row1.push("");
         aoa.push(row1);
         merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } });
 
-        // Row 2: Subtitle
         const row2 = [ { v: `MONTHLY ATTENDANCE REGISTER | ${activeConf.label.toUpperCase()}`, t: "s", s: { alignment: { horizontal: "center", vertical: "center" }, font: { sz: 10, color: CLR_WHITE }, fill: { fgColor: CLR_HEADER } } } ];
         for(let i=1; i<totalCols; i++) row2.push("");
         aoa.push(row2);
         merges.push({ s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } });
 
-        // Row 3: Day Numbers & Names
         const row3 = [
             cell("#", CLR_HEADER, true, "center", CLR_WHITE),
             cell("Employee Name", CLR_HEADER, true, "center", CLR_WHITE)
@@ -746,7 +1084,6 @@ const handleExportInOutExcel = () => {
         }
         aoa.push(row3);
 
-        // Row 4: IN / OUT headers
         const row4 = [
             cell("", CLR_HEADER, true, "center", CLR_WHITE),
             cell("", CLR_HEADER, true, "center", CLR_WHITE)
@@ -757,16 +1094,13 @@ const handleExportInOutExcel = () => {
         }
         aoa.push(row4);
         
-        // Merge Sr and Name down to row 4
         merges.push({ s: { r: 2, c: 0 }, e: { r: 3, c: 0 } });
         merges.push({ s: { r: 2, c: 1 }, e: { r: 3, c: 1 } });
 
-        // Data Rows
         db.forEach((emp, index) => {
             const rIn = [], rOut = [];
             const rBase = aoa.length;
             
-            // # and Name (will be merged vertically)
             rIn.push(cell(index + 1, null, true, "center", null, BORDER_IN_ROW));
             rIn.push(cell(emp.name, null, true, "left", null, BORDER_IN_ROW));
             rOut.push(cell("", null, false, "center", null, BORDER_OUT_ROW));
@@ -779,14 +1113,13 @@ const handleExportInOutExcel = () => {
                 const inTime = emp[`in${i}`] || "";
                 const outTime = emp[`out${i}`] || "";
                 
-                // If it's W/O, absent, or no time logged but marked, show the status in the top cell
                 let inDisplay = inTime;
                 let outDisplay = outTime;
                 
                 if (!inTime && !outTime) {
                     const status = String(emp[`d${i}`] || "").trim().toUpperCase();
                     if (status && status !== 'P') {
-                        inDisplay = status; // Show 'A', 'H', 'W/O' etc.
+                        inDisplay = status; 
                     }
                 }
 
@@ -797,7 +1130,6 @@ const handleExportInOutExcel = () => {
             aoa.push(rIn);
             aoa.push(rOut);
 
-            // Merge # and Name
             merges.push({ s: { r: rBase, c: 0 }, e: { r: rBase + 1, c: 0 } });
             merges.push({ s: { r: rBase, c: 1 }, e: { r: rBase + 1, c: 1 } });
         });
@@ -805,16 +1137,14 @@ const handleExportInOutExcel = () => {
         const ws = XLSX.utils.aoa_to_sheet(aoa);
         ws['!merges'] = merges;
         
-        // Column widths
         const cols = [{ wch: 5 }, { wch: 25 }];
         for (let i = 0; i < activeConf.days; i++) cols.push({ wch: 9 });
         ws['!cols'] = cols;
         
-        // Row heights
         const rows = [{ hpt: 35 }, { hpt: 20 }, { hpt: 30 }, { hpt: 15 }];
         for(let i=0; i<db.length; i++){
-            rows.push({ hpt: 18 }); // IN row
-            rows.push({ hpt: 18 }); // OUT row
+            rows.push({ hpt: 18 }); 
+            rows.push({ hpt: 18 }); 
         }
         ws['!rows'] = rows;
 
@@ -960,7 +1290,7 @@ const executePDFExport = () => {
         notify("Verification PDF Exported successfully!", "success");
 
     } catch (err) {
-        console.error(err); notify("Failed to export PDF. Ensure internet connection.", "error");
+        console.error(err); notify("Failed to export PDF.", "error");
     }
 };
 
@@ -1002,19 +1332,18 @@ const handleTimeCustomSave = () => {
     handleTimeSelect(formatted);
 };
 
-// Styling function for the large time grid buttons
 const getTimeBtnClass = (timeStr, step) => {
     const isHour = timeStr.includes(':00');
     const isHalf = timeStr.includes(':30');
     
     if (step === 'in') {
-        if (isHour) return "bg-emerald-100 border-emerald-300 text-emerald-900 shadow-sm font-bold hover:bg-emerald-500 hover:text-white";
-        if (isHalf) return "bg-emerald-50 border-emerald-200 text-emerald-800 font-semibold hover:bg-emerald-500 hover:text-white";
-        return "bg-white border-slate-200 text-slate-600 font-medium hover:bg-emerald-500 hover:text-white hover:border-emerald-500";
+        if (isHour) return "btn btn-success font-bold text-white shadow-sm";
+        if (isHalf) return "btn btn-outline-success font-semibold";
+        return "btn btn-outline-secondary";
     } else {
-        if (isHour) return "bg-rose-100 border-rose-300 text-rose-900 shadow-sm font-bold hover:bg-rose-500 hover:text-white";
-        if (isHalf) return "bg-rose-50 border-rose-200 text-rose-800 font-semibold hover:bg-rose-500 hover:text-white";
-        return "bg-white border-slate-200 text-slate-600 font-medium hover:bg-rose-500 hover:text-white hover:border-rose-500";
+        if (isHour) return "btn btn-danger font-bold text-white shadow-sm";
+        if (isHalf) return "btn btn-outline-danger font-semibold";
+        return "btn btn-outline-secondary";
     }
 };
 
@@ -1063,14 +1392,12 @@ useEffect(() => {
 
         const key = e.key.toLowerCase();
         
-        // Mark Present & Trigger Time Bubble
         if (key === 'p') { 
             updateAtt(focusDay, 'P'); 
             setTimeModal({ show: true, day: focusDay, step: 'in', inVal: '', outVal: '', custom: '' });
             e.preventDefault(); 
         }
         
-        // Other markings clear the in/out time
         if (['a', 'h', 't', 'w'].includes(key) || e.key === 'Backspace' || e.key === 'Delete') { 
             let val = '';
             if (key === 'a') val = 'A';
@@ -1115,24 +1442,26 @@ const activeEmp = useMemo(() => db.find(e => e.id === selectedId), [db, selected
 
 const getAttColor = (val) => {
     if (val === 'P') return 'bg-status-p text-white border-status-p';
-    if (val === 'P?') return 'bg-orange-500 text-white border-orange-500';
+    if (val === 'P?') return 'bg-warning text-white border-warning';
     if (val === 'A') return 'bg-status-a text-white border-status-a';
     if (val === '0.5' || val === 'H') return 'bg-status-h text-white border-status-h';
-    if (val === 'T') return 'bg-sky-500 text-white border-sky-500';
-    if (val === 'W/O') return 'bg-purple-500 text-white border-purple-500';
-    return 'bg-slate-100 text-slate-400 border-slate-200';
+    if (val === 'T') return 'bg-info text-white border-info';
+    if (val === 'W/O') return 'bg-secondary text-white border-secondary';
+    return 'bg-slate-100 text-muted border-slate-200';
 };
 
 if (auth.isLocked) {
     return (
-        <div className="flex h-screen w-full bg-slate-900 font-sans items-center justify-center">
-            <div className="bg-white p-8 rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm flex flex-col items-center">
-                <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-brand-100"><Icon path="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" className="w-8 h-8" /></div>
-                <h1 className="text-2xl font-black text-slate-800 tracking-tight mb-2"><span className="text-brand-600">Arpit</span> HR OS</h1>
-                <p className="text-xs font-bold text-slate-500 mb-8 text-center">{!auth.hasPassword ? "Create a master password." : "Enter your master password."}</p>
-                <form onSubmit={handleLogin} className="w-full">
-                    <input type="password" placeholder={!auth.hasPassword ? "New Password" : "Password"} value={passInput} onChange={e => setPassInput(e.target.value)} className="w-full text-center text-xl font-black text-slate-800 bg-slate-50 border-2 border-slate-200 rounded-xl py-3 outline-none focus:border-brand-500 transition mb-4 tracking-widest shadow-inner" autoFocus />
-                    <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white font-black text-sm py-3.5 rounded-xl shadow-lg transition transform hover:-translate-y-0.5">{!auth.hasPassword ? "Set Password & Enter" : "Unlock System"}</button>
+        <div className="d-flex vh-100 w-100 bg-dark align-items-center justify-content-center">
+            <div className="card p-4 shadow-lg border-0 bg-white text-center" style={{ width: '100%', maxWidth: '380px', borderRadius: '1rem' }}>
+                <div className="mx-auto p-3 rounded-4 bg-brand-50 text-brand-600 d-flex align-items-center justify-content-center mb-4 border border-brand-100" style={{ width: '64px', height: '64px' }}>
+                    <Icon path="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" className="w-100 h-100" />
+                </div>
+                <h1 className="h4 font-black text-slate-800 tracking-tight mb-2"><span className="text-brand-600">Arpit</span> HR OS</h1>
+                <p className="fs-7 font-bold text-slate-500 mb-4">{!auth.hasPassword ? "Create a master password." : "Enter your master password."}</p>
+                <form onSubmit={handleLogin}>
+                    <input type="password" placeholder={!auth.hasPassword ? "New Password" : "Password"} value={passInput} onChange={e => setPassInput(e.target.value)} className="form-control form-control-lg text-center font-black text-slate-800 bg-slate-50 border-2 border-slate-200 rounded-3 py-3 mb-4 tracking-widest shadow-inner focus:border-brand-500" autoFocus />
+                    <button type="submit" className="btn btn-primary font-black py-3 w-100 rounded-3 shadow">{!auth.hasPassword ? "Set Password & Enter" : "Unlock System"}</button>
                 </form>
             </div>
         </div>
@@ -1140,83 +1469,112 @@ if (auth.isLocked) {
 }
 
 return (
-<div className="flex h-screen w-full font-sans text-slate-800">
+<div className="d-flex vh-100 w-100 overflow-hidden">
 
-<div className="w-80 bg-white border-r border-slate-200 flex flex-col z-20 shadow-xl shadow-slate-200/50 shrink-0">
-    <div className="p-5 border-b border-slate-100 bg-slate-50 flex flex-col gap-3 shrink-0">
-        <div className="flex justify-between items-center">
+<div className="sidebar-panel bg-white border-end d-flex flex-column shadow-sm vh-100">
+    <div className="p-4 border-bottom border-slate-100 bg-slate-50 d-flex flex-column gap-3">
+        <div className="d-flex justify-content-between align-items-center">
             <div>
-                <h1 className="text-xl font-black tracking-tight text-slate-900"><span className="text-brand-600">Arise</span> HR</h1>
-                <p className="text-xs font-semibold text-slate-500 mt-0.5">{activeConf.label} Register</p>
+                <h1 className="h5 font-black tracking-tight text-slate-900 m-0"><span className="text-brand-600">Arise</span> HR</h1>
+                <p className="fs-8 text-slate-500 font-semibold mt-1 m-0">{activeConf.label} Register</p>
             </div>
-            <button onClick={() => { setAuth({...auth, isLocked: true}); notify("Locked securely.", "success"); }} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition" title="Lock System"><Icon path="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></button>
+            <button onClick={() => { setAuth({...auth, isLocked: true}); notify("Locked securely.", "success"); }} className="btn btn-light p-2 rounded-3 text-slate-700" title="Lock System">
+                <Icon path="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </button>
         </div>
 
-        <div className="flex gap-1 mt-1 bg-slate-200 p-1 rounded-lg">
+        <div className="d-flex p-1 bg-slate-200 rounded-3 gap-1">
             {MONTHS.map(m => (
                 <button 
                     key={m.id} onClick={() => { setActiveMonthKey(m.id); setLogDate(1); setFocusDay(1); setSelectedId(null); }}
-                    className={`flex-1 py-1.5 text-[11px] font-black rounded-md transition-all ${activeMonthKey === m.id ? 'bg-white text-brand-700 shadow border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`btn btn-sm flex-grow-1 py-1 fs-8 font-black border-0 rounded ${activeMonthKey === m.id ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 bg-transparent'}`}
                 >{m.label}</button>
             ))}
         </div>
         
-        <div className="flex flex-col gap-1.5 mt-2">
-            <div className="flex gap-1.5">
-                <input type="file" accept=".csv" className="hidden" ref={fileRef} onChange={handleImport} />
-                <button onClick={() => fileRef.current.click()} className="flex-1 py-1.5 px-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm"><Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" className="w-3 h-3"/> Import</button>
-                <button onClick={() => { const e = defaultEmp(activeConf); setDb([e, ...db]); setActiveTab('employees'); setSelectedId(e.id); }} className="px-2 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-md transition shadow-md shadow-brand-500/30" title="Add New"><Icon path="M12 4v16m8-8H4" className="w-4 h-4"/></button>
+        <div className="d-flex flex-column gap-2">
+            <div className="d-flex gap-2">
+                <input type="file" accept=".csv" className="d-none" ref={fileRef} onChange={handleImport} />
+                <button onClick={() => fileRef.current.click()} className="btn btn-sm btn-light border flex-grow-1 font-bold d-flex align-items-center justify-content-center gap-1">
+                    <Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /> Import
+                </button>
+                <button onClick={() => { const e = defaultEmp(activeConf); setDb([e, ...db]); setActiveTab('employees'); setSelectedId(e.id); }} className="btn btn-sm btn-primary px-3 shadow" title="Add New">
+                    <Icon path="M12 4v16m8-8H4" />
+                </button>
             </div>
-            <div className="flex gap-1.5">
-                <button onClick={handleExportInOutExcel} className="flex-1 py-1.5 px-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm" title="Download Special IN/OUT Time Sheet"><Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" className="w-3 h-3"/> IN/OUT Excel</button>
-                <button onClick={handleExportExcel} className="flex-1 py-1.5 px-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm" title="Detailed Attendance Sheet"><Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" className="w-3 h-3"/> Full Excel</button>
-                <button onClick={() => setPdfModal({ show: true, hideBasic: false })} className="flex-1 py-1.5 px-1 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-md transition text-[10px] font-bold flex justify-center items-center gap-1 shadow-sm" title="Verification Summary Print"><Icon path="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" className="w-3 h-3"/> PDF Recheck</button>
+            <div className="row g-1">
+                <div className="col">
+                    <button onClick={handleExportInOutExcel} className="btn btn-sm btn-outline-secondary w-100 fs-8 font-bold text-indigo-700 bg-indigo-100 border-0" title="Download Special IN/OUT Time Sheet">
+                        IN/OUT
+                    </button>
+                </div>
+                <div className="col">
+                    <button onClick={handleExportExcel} className="btn btn-sm btn-outline-secondary w-100 fs-8 font-bold text-success bg-success bg-opacity-10 border-0" title="Detailed Attendance Sheet">
+                        Excel
+                    </button>
+                </div>
+                <div className="col">
+                    <button onClick={() => setPdfModal({ show: true, hideBasic: false })} className="btn btn-sm btn-outline-secondary w-100 fs-8 font-bold text-danger bg-danger bg-opacity-10 border-0" title="Verification Summary Print">
+                        PDF
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div className="flex bg-slate-200 p-1 rounded-lg mt-1 shadow-inner gap-1">
-            <button onClick={() => setActiveTab('employees')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'employees' ? 'bg-white text-slate-800 shadow' : 'text-slate-500 hover:text-slate-700'}`}>Employees</button>
-            <button onClick={() => setActiveTab('logs')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'logs' ? 'bg-white text-slate-800 shadow' : 'text-slate-500 hover:text-slate-700'}`}>Daily Logs</button>
-            <button onClick={() => setActiveTab('dashboard')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'dashboard' ? 'bg-white text-slate-800 shadow' : 'text-slate-500 hover:text-slate-700'}`}>Analytics</button>
+        <div className="row g-1 p-1 bg-slate-200 rounded-3">
+            <div className="col-3">
+                <button onClick={() => setActiveTab('employees')} className={`btn btn-sm w-100 fs-8 font-bold border-0 py-1.5 ${activeTab === 'employees' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 bg-transparent'}`}>Staff</button>
+            </div>
+            <div className="col-3">
+                <button onClick={() => setActiveTab('logs')} className={`btn btn-sm w-100 fs-8 font-bold border-0 py-1.5 ${activeTab === 'logs' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 bg-transparent'}`}>Logs</button>
+            </div>
+            <div className="col-3">
+                <button onClick={() => setActiveTab('dashboard')} className={`btn btn-sm w-100 fs-8 font-bold border-0 py-1.5 ${activeTab === 'dashboard' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 bg-transparent'}`}>Charts</button>
+            </div>
+            <div className="col-3">
+                <button onClick={() => setActiveTab('settings')} className={`btn btn-sm w-100 fs-8 font-bold border-0 py-1.5 ${activeTab === 'settings' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 bg-transparent'}`}>Setup</button>
+            </div>
         </div>
     </div>
     
     {activeTab === 'employees' ? (
         <>
-            <div className="p-4 bg-slate-50 border-b border-slate-100 shrink-0">
-                <div className="relative">
-                    <Icon path="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-                    <input type="text" placeholder="Search employee..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm" />
+            <div className="p-3 bg-slate-50 border-bottom border-slate-100">
+                <div className="position-relative">
+                    <span className="position-absolute start-0 top-50 translate-middle-y ps-3 text-slate-400">
+                        <Icon path="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </span>
+                    <input type="text" placeholder="Search employee..." value={search} onChange={e => setSearch(e.target.value)} className="form-control form-control-sm ps-5 bg-white border border-slate-200 rounded-3 py-2" />
                 </div>
-                <div className="flex justify-between items-center mt-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <div className="d-flex justify-content-between align-items-center mt-3 fs-8 font-bold text-slate-500 text-uppercase tracking-wider">
                     <span>{filtered.length} People</span>
-                    <button onClick={handleResetSystem} className="text-rose-500 hover:underline">Reset Month</button>
+                    <button onClick={handleResetSystem} className="btn btn-link p-0 text-danger text-decoration-none fs-8 font-bold">Reset Month</button>
                 </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 hide-scroll bg-slate-50 space-y-1">
+            <div className="flex-grow-1 overflow-y-auto p-2 hide-scroll bg-slate-50">
                 {filtered.length === 0 && (
-                    <div className="flex flex-col items-center justify-center p-6 text-center">
-                        <div className="text-sm text-slate-400 font-medium mb-4">No records found for {activeConf.label}.</div>
+                    <div className="text-center p-4">
+                        <div className="small text-muted font-bold mb-3">No records found for {activeConf.label}.</div>
                         {dbs[MONTHS.find(m => m.id !== activeMonthKey).id]?.length > 0 && (
-                            <button onClick={handleMigrateEmployees} className="w-full text-xs bg-brand-100 text-brand-700 px-4 py-3 rounded-xl font-bold hover:bg-brand-200 transition border border-brand-200 shadow-sm flex items-center justify-center gap-2">
-                                <Icon path="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" className="w-4 h-4"/>
+                            <button onClick={handleMigrateEmployees} className="btn btn-sm btn-light border text-brand-700 font-bold py-2 w-100 d-flex align-items-center justify-content-center gap-2">
+                                <Icon path="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                 Migrate Workforce Forward
                             </button>
                         )}
                     </div>
                 )}
                 {filtered.map((emp) => (
-                    <div key={emp.id} onClick={() => setSelectedId(emp.id)} className={`p-3 rounded-xl cursor-pointer border transition-all duration-200 ${selectedId === emp.id ? 'bg-white border-brand-500 shadow-md shadow-brand-500/10 scale-[1.02]' : 'bg-transparent border-transparent hover:bg-slate-100 hover:border-slate-200'}`}>
-                        <div className="flex justify-between items-start mb-1">
-                            <h3 className={`font-bold text-sm ${selectedId === emp.id ? 'text-brand-700' : 'text-slate-700'} truncate pr-2`}>{emp.name}</h3>
-                            <span className="text-[10px] font-bold bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">{emp.code}</span>
+                    <div key={emp.id} onClick={() => setSelectedId(emp.id)} className={`p-3 rounded-3 cursor-pointer border mb-1 transition ${selectedId === emp.id ? 'bg-white border-brand-500 shadow-sm' : 'bg-transparent border-transparent'}`} style={{ transform: selectedId === emp.id ? 'scale(1.02)' : 'none' }}>
+                        <div className="d-flex justify-content-between align-items-start mb-1">
+                            <h3 className={`font-bold fs-7 m-0 ${selectedId === emp.id ? 'text-brand-700' : 'text-slate-700'} text-truncate`} style={{ maxWidth: '170px' }}>{emp.name}</h3>
+                            <span className="fs-8 font-bold bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">{emp.code}</span>
                         </div>
-                        <div className="flex justify-between items-center mt-2">
-                            <div className="flex gap-1.5">
-                                <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600"><Icon path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" className="w-3.5 h-3.5"/> {emp.workingDays}</span>
-                                <span className="flex items-center gap-1 text-xs font-semibold text-rose-500 ml-2"><Icon path="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" className="w-3.5 h-3.5"/> {emp.absent}</span>
+                        <div className="d-flex justify-content-between align-items-center mt-2">
+                            <div className="d-flex gap-2">
+                                <span className="fs-8 font-bold text-success d-flex align-items-center gap-1"><Icon path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /> {emp.workingDays}</span>
+                                <span className="fs-8 font-bold text-danger d-flex align-items-center gap-1"><Icon path="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /> {emp.absent}</span>
                             </div>
-                            <span className="text-xs font-bold text-slate-900">₹{emp.salaryToBePaid.toLocaleString(undefined, {maximumFractionDigits:0})}</span>
+                            <span className="fs-7 font-black text-slate-900">₹{emp.salaryToBePaid.toLocaleString(undefined, {maximumFractionDigits:0})}</span>
                         </div>
                     </div>
                 ))}
@@ -1224,42 +1582,46 @@ return (
         </>
     ) : activeTab === 'logs' ? (
         <>
-            <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center shrink-0">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Log Date</span>
+            <div className="p-3 bg-slate-50 border-bottom border-slate-100 d-flex justify-content-between align-items-center">
+                <span className="fs-8 font-bold text-slate-500 text-uppercase tracking-wider">Select Log Date</span>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 hide-scroll bg-slate-50 space-y-1">
+            <div className="flex-grow-1 overflow-y-auto p-2 hide-scroll bg-slate-50">
                 {Array.from({ length: activeConf.days }, (_, i) => i + 1).map(day => (
-                    <div key={day} onClick={() => setLogDate(day)} className={`p-3 rounded-xl cursor-pointer border transition-all duration-200 ${logDate === day ? 'bg-white border-brand-500 shadow-md scale-[1.02]' : 'bg-transparent border-transparent hover:bg-slate-100'}`}>
-                        <div className="flex justify-between items-center">
-                            <h3 className={`font-bold text-sm ${logDate === day ? 'text-brand-700' : 'text-slate-700'}`}>{activeConf.label.split(' ')[0]} {String(day).padStart(2, '0')}, {activeConf.label.split(' ')[1]}</h3>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${activeConf.weekends.includes(day) ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'}`}>{DAY_NAMES[(activeConf.startOffset + day - 1) % 7]}</span>
+                    <div key={day} onClick={() => setLogDate(day)} className={`p-3 rounded-3 cursor-pointer border mb-1 transition ${logDate === day ? 'bg-white border-brand-500 shadow-sm' : 'bg-transparent border-transparent'}`} style={{ transform: logDate === day ? 'scale(1.02)' : 'none' }}>
+                        <div className="d-flex justify-content-between align-items-center">
+                            <h3 className={`font-bold fs-7 m-0 ${logDate === day ? 'text-brand-700' : 'text-slate-700'}`}>{activeConf.label.split(' ')[0]} {String(day).padStart(2, '0')}, {activeConf.label.split(' ')[1]}</h3>
+                            <span className={`fs-8 font-bold px-2 py-0.5 rounded ${activeConf.weekends.includes(day) ? 'bg-warning bg-opacity-10 text-warning' : 'bg-slate-200 text-slate-600'}`}>{DAY_NAMES[(activeConf.startOffset + day - 1) % 7]}</span>
                         </div>
                     </div>
                 ))}
             </div>
         </>
     ) : (
-        <div className="flex-1 bg-slate-50 flex flex-col p-6 items-center justify-center text-center">
-            <div className="w-20 h-20 mb-4 rounded-3xl bg-brand-100 flex items-center justify-center shadow-inner"><Icon path="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" className="w-10 h-10 text-brand-600" /></div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2 tracking-tight">Analytics Active</h2>
-            <p className="text-xs font-bold text-slate-500">View detailed company statistics on the main panel.</p>
-            <p className="text-[10px] font-bold text-slate-400 mt-4 px-2 py-1 bg-slate-200 rounded">Press 'Esc' to return to Employees</p>
+        <div className="flex-grow-1 bg-slate-50 d-flex flex-column p-4 align-items-center justify-content-center text-center">
+            <div className="p-4 mb-4 rounded-4 bg-brand-100 text-brand-600 d-flex align-items-center justify-content-center shadow-inner" style={{ width: '80px', height: '80px' }}>
+                <Icon path="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" className="w-100 h-100" />
+            </div>
+            <h2 className="h5 font-bold text-slate-800 mb-2 tracking-tight">{activeTab === 'settings' ? 'Settings Active' : 'Analytics Active'}</h2>
+            <p className="fs-7 font-bold text-slate-500">View detailed company {activeTab === 'settings' ? 'data and backups' : 'statistics'} on the main panel.</p>
+            <p className="fs-8 font-black text-slate-400 mt-4 px-2 py-1 bg-slate-200 rounded text-uppercase">Esc to Close</p>
         </div>
     )}
 </div>
 
-<div className="flex-1 flex flex-col bg-slate-50 relative h-full">
+<div className="flex-grow-1 d-flex flex-column bg-slate-50 relative h-100 overflow-hidden">
 {activeTab === 'dashboard' ? (
     <OwnerDashboard db={db} activeConf={activeConf} />
+) : activeTab === 'settings' ? (
+    <SystemSettings db={db} setDb={setDb} activeConf={activeConf} notify={notify} />
 ) : activeTab === 'logs' ? (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <div className="bg-white border-b border-slate-200 px-8 py-6 z-10 shrink-0 shadow-sm">
-            <div className="flex justify-between items-start">
+    <div className="d-flex flex-column h-100 overflow-hidden">
+        <div className="bg-white border-bottom px-4 py-4 shadow-sm">
+            <div className="d-flex justify-content-between align-items-start">
                 <div>
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Daily Log: {activeConf.label.split(' ')[0]} {logDate}, {activeConf.label.split(' ')[1]}</h2>
-                    <p className="text-sm font-semibold text-slate-500 mt-1">{DAY_NAMES[(activeConf.startOffset + logDate - 1) % 7]}</p>
+                    <h2 className="h4 font-black text-slate-800 tracking-tight m-0">Daily Log: {activeConf.label.split(' ')[0]} {logDate}, {activeConf.label.split(' ')[1]}</h2>
+                    <p className="fs-7 text-slate-500 font-semibold mt-1 m-0">{DAY_NAMES[(activeConf.startOffset + logDate - 1) % 7]}</p>
                 </div>
-                <div className="text-[10px] font-bold text-slate-400 mt-1 px-2 py-1 bg-slate-100 rounded border border-slate-200 hidden md:block">Press 'Esc' to close</div>
+                <div className="fs-8 font-black text-slate-400 bg-light border px-2 py-1 rounded d-none d-md-block">Press 'Esc' to exit</div>
             </div>
             
             {(() => {
@@ -1285,53 +1647,51 @@ return (
                 });
 
                 return (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mt-6 border-t border-slate-100 pt-5">
-                        <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100"><div className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest mb-1">Total Present</div><div className="text-2xl font-black text-emerald-700">{p}</div></div>
-                        <div className="bg-orange-50 p-3 rounded-xl border border-orange-100"><div className="text-[10px] font-extrabold text-orange-600 uppercase tracking-widest mb-1">Missing Punch</div><div className="text-2xl font-black text-orange-700">{pMiss}</div></div>
-                        <div className="bg-amber-50 p-3 rounded-xl border border-amber-100"><div className="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest mb-1">Total Half</div><div className="text-2xl font-black text-amber-700">{h}</div></div>
-                        <div className="bg-rose-50 p-3 rounded-xl border border-rose-100"><div className="text-[10px] font-extrabold text-rose-600 uppercase tracking-widest mb-1">Total Absent</div><div className="text-2xl font-black text-rose-700">{a}</div></div>
-                        <div className="bg-sky-50 p-3 rounded-xl border border-sky-100"><div className="text-[10px] font-extrabold text-sky-600 uppercase tracking-widest mb-1">Total Tour</div><div className="text-2xl font-black text-sky-700">{t}</div></div>
-                        <div className="bg-purple-50 p-3 rounded-xl border border-purple-100"><div className="text-[10px] font-extrabold text-purple-600 uppercase tracking-widest mb-1">Total W/O</div><div className="text-2xl font-black text-purple-700">{wo}</div></div>
-                        <div className="bg-brand-50 p-3 rounded-xl border border-brand-100"><div className="text-[10px] font-extrabold text-brand-600 uppercase tracking-widest mb-1">Total OT (Hrs)</div><div className="text-2xl font-black text-brand-700">{otTotal}</div></div>
+                    <div className="row g-2 mt-3 pt-3 border-top border-slate-100">
+                        <div className="col-4 col-md-3 col-lg"><div className="bg-success bg-opacity-10 p-2 rounded-3 border"><span className="fs-8 font-black text-success text-uppercase d-block mb-1">Present</span><span className="h5 font-black text-success m-0">{p}</span></div></div>
+                        <div className="col-4 col-md-3 col-lg"><div className="bg-warning bg-opacity-10 p-2 rounded-3 border"><span className="fs-8 font-black text-warning text-uppercase d-block mb-1">Missing</span><span className="h5 font-black text-warning m-0">{pMiss}</span></div></div>
+                        <div className="col-4 col-md-3 col-lg"><div className="bg-warning bg-opacity-10 p-2 rounded-3 border"><span className="fs-8 font-black text-warning text-uppercase d-block mb-1">Half</span><span className="h5 font-black text-warning m-0">{h}</span></div></div>
+                        <div className="col-4 col-md-3 col-lg"><div className="bg-danger bg-opacity-10 p-2 rounded-3 border"><span className="fs-8 font-black text-danger text-uppercase d-block mb-1">Absent</span><span className="h5 font-black text-danger m-0">{a}</span></div></div>
+                        <div className="col-4 col-md-3 col-lg"><div className="bg-info bg-opacity-10 p-2 rounded-3 border"><span className="fs-8 font-black text-info text-uppercase d-block mb-1">Tour</span><span className="h5 font-black text-info m-0">{t}</span></div></div>
+                        <div className="col-4 col-md-3 col-lg"><div className="bg-secondary bg-opacity-10 p-2 rounded-3 border"><span className="fs-8 font-black text-secondary text-uppercase d-block mb-1">W/O</span><span className="h5 font-black text-secondary m-0">{wo}</span></div></div>
+                        <div className="col-12 col-lg"><div className="bg-brand-50 p-2 rounded-3 border"><span className="fs-8 font-black text-brand-600 text-uppercase d-block mb-1">OT (Hrs)</span><span className="h5 font-black text-brand-700 m-0">{otTotal}</span></div></div>
                     </div>
                 );
             })()}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 hide-scroll bg-slate-50">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500">
+        <div className="flex-grow-1 overflow-y-auto p-4 hide-scroll bg-slate-50">
+            <div className="card rounded-3 shadow-sm border-0 bg-white overflow-hidden">
+                <table className="table table-hover align-middle m-0 text-left">
+                    <thead className="table-light fs-8 text-uppercase tracking-wider text-slate-500">
                         <tr>
-                            <th className="p-4 font-black">Employee Details</th>
-                            <th className="p-4 font-black">Code</th>
-                            <th className="p-4 font-black">Attendance Status</th>
-                            <th className="p-4 font-black">In / Out Time</th>
-                            <th className="p-4 font-black">Overtime (OT)</th>
+                            <th className="p-3 font-black">Employee Details</th>
+                            <th className="p-3 font-black">Code</th>
+                            <th className="p-3 font-black">Attendance Status</th>
+                            <th className="p-3 font-black">In / Out Time</th>
+                            <th className="p-3 font-black">Overtime (OT)</th>
                         </tr>
                     </thead>
-                    <tbody className="text-sm font-medium text-slate-700">
+                    <tbody className="fs-7 text-slate-700">
                         {db.map(emp => {
                             const manualVal = emp[`d${logDate}`];
                             const autoWoVal = !manualVal && emp.autoWoDays?.[logDate] === "W/O" ? "W/O" : "";
                             const aVal = manualVal ? String(manualVal).toUpperCase() : autoWoVal;
                             const otVal = emp[`ot${logDate}`];
                             return (
-                                <tr key={emp.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                                    <td className="p-4 font-bold text-slate-800">{emp.name}</td>
-                                    <td className="p-4 text-xs font-bold text-slate-400">{emp.code}</td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`px-2 py-1.5 rounded-md text-[10px] font-black border ${aVal ? getAttColor(aVal).replace('border-', 'border-').replace('text-white', '') : 'bg-slate-100 text-slate-400 border-slate-200'}`}>{aVal || 'UNMARKED'}</span>
-                                        </div>
+                                <tr key={emp.id}>
+                                    <td className="p-3 font-bold text-slate-800">{emp.name}</td>
+                                    <td className="p-3 fs-8 font-bold text-slate-400">{emp.code}</td>
+                                    <td className="p-3">
+                                        <span className={`px-2 py-1 rounded fs-8 font-black border ${aVal ? getAttColor(aVal).replace('text-white', '') : 'bg-slate-100 text-slate-400 border-slate-200'}`}>{aVal || 'UNMARKED'}</span>
                                     </td>
-                                    <td className="p-4 text-[11px] font-bold text-slate-500">
-                                        {emp[`in${logDate}`] && <div className="text-emerald-600">IN: {emp[`in${logDate}`]}</div>}
-                                        {emp[`out${logDate}`] && <div className="text-rose-600">OUT: {emp[`out${logDate}`]}</div>}
+                                    <td className="p-3 fs-8 font-bold text-slate-500">
+                                        {emp[`in${logDate}`] && <div className="text-success">IN: {emp[`in${logDate}`]}</div>}
+                                        {emp[`out${logDate}`] && <div className="text-danger">OUT: {emp[`out${logDate}`]}</div>}
                                         {!emp[`in${logDate}`] && !emp[`out${logDate}`] && '-'}
                                     </td>
-                                    <td className="p-4">
-                                        {otVal ? <span className={`px-2 py-1 rounded-md text-[10px] font-bold border ${parseFloat(otVal) < 0 ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-brand-100 text-brand-700 border-brand-200'}`}>{otVal} Hrs</span> : '-'}
+                                    <td className="p-3">
+                                        {otVal ? <span className={`px-2 py-1 rounded fs-8 font-bold border ${parseFloat(otVal) < 0 ? 'bg-danger bg-opacity-10 text-danger border-danger' : 'bg-brand-100 text-brand-700 border-brand-200'}`}>{otVal} Hrs</span> : '-'}
                                     </td>
                                 </tr>
                             )
@@ -1342,77 +1702,89 @@ return (
         </div>
     </div>
 ) : !activeEmp ? (
-    <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-        <div className="w-24 h-24 mb-6 rounded-3xl bg-slate-200 flex items-center justify-center shadow-inner"><Icon path="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" className="w-12 h-12 text-slate-400" /></div>
-        <h2 className="text-2xl font-bold text-slate-500 mb-2 tracking-tight">Select an Employee</h2>
-        <p className="text-sm font-medium max-w-sm text-center">Use the sidebar to choose an employee, or start typing to search.</p>
+    <div className="flex-grow-1 d-flex flex-column align-items-center justify-content-center text-slate-400">
+        <div className="p-4 mb-4 rounded-4 bg-slate-200 text-slate-400 d-flex align-items-center justify-content-center shadow-inner" style={{ width: '96px', height: '96px' }}>
+            <Icon path="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" className="w-100 h-100" />
+        </div>
+        <h2 className="h4 font-bold text-slate-500 mb-2 tracking-tight">Select an Employee</h2>
+        <p className="small text-muted text-center" style={{ maxWidth: '320px' }}>Use the sidebar to choose an employee, or start typing to search.</p>
     </div>
 ) : (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <div className="bg-white border-b border-slate-200 px-8 py-6 z-10 shrink-0 shadow-sm">
-            <div className="flex justify-between items-start">
-                <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center text-2xl font-black shadow-lg shadow-brand-500/40 border-2 border-white">{activeEmp.name.charAt(0)}</div>
+    <div className="flex-grow-1 d-flex flex-column h-100 overflow-hidden">
+        <div className="bg-white border-bottom px-4 py-4 shadow-sm">
+            <div className="d-flex justify-content-between align-items-start">
+                <div className="d-flex align-items-center gap-3">
+                    <div className="rounded-3 bg-brand-600 text-white d-flex align-items-center justify-content-center font-black h2 m-0" style={{ width: '64px', height: '64px' }}>{activeEmp.name.charAt(0)}</div>
                     <div>
-                        <input type="text" value={activeEmp.name} onChange={e => updateActive({name: e.target.value})} className="text-3xl font-black text-slate-900 bg-transparent border-none outline-none p-0 mb-1 focus:ring-0 w-[400px]" />
-                        <div className="flex items-center gap-2">
-                            <input type="text" value={activeEmp.code} onChange={e => updateActive({code: e.target.value})} className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200 w-24 outline-none focus:border-brand-400" />
-                            <input type="text" value={activeEmp.dept} onChange={e => updateActive({dept: e.target.value})} className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200 w-32 outline-none focus:border-brand-400" />
-                            <input type="text" value={activeEmp.type} onChange={e => updateActive({type: e.target.value})} className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200 w-12 text-center outline-none focus:border-brand-400" placeholder="Type" />
-                            <input type="date" value={activeEmp.joiningDate || ""} onChange={e => updateActive({joiningDate: e.target.value})} className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200 w-32 outline-none focus:border-brand-400" title="Joining Date" />
+                        <input type="text" value={activeEmp.name} onChange={e => updateActive({name: e.target.value})} className="h3 font-black text-slate-900 bg-transparent border-0 outline-none p-0 mb-1 focus:ring-0" style={{ width: '100%', maxWidth: '400px' }} />
+                        <div className="d-flex align-items-center gap-1.5 flex-wrap">
+                            <input type="text" value={activeEmp.code} onChange={e => updateActive({code: e.target.value})} className="form-control form-control-sm text-slate-600 font-bold bg-slate-100 border border-slate-200" style={{ width: '80px' }} />
+                            <input type="text" value={activeEmp.dept} onChange={e => updateActive({dept: e.target.value})} className="form-control form-control-sm text-slate-600 font-bold bg-slate-100 border border-slate-200" style={{ width: '110px' }} />
+                            <input type="text" value={activeEmp.type} onChange={e => updateActive({type: e.target.value})} className="form-control form-control-sm text-slate-600 font-bold bg-slate-100 border border-slate-200 text-center" style={{ width: '50px' }} placeholder="Type" />
+                            <input type="date" value={activeEmp.joiningDate || ""} onChange={e => updateActive({joiningDate: e.target.value})} className="form-control form-control-sm text-slate-600 font-bold bg-slate-100 border border-slate-200" style={{ width: '130px' }} title="Joining Date" />
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-x-8 gap-y-4 border-t border-slate-100 pt-5">
-                <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Working Days</span><span className="text-xl font-black text-slate-800">{activeEmp.workingDays}</span></div>
-                <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Present (P)</span><span className="text-xl font-black text-emerald-600">{activeEmp.pOnly}</span></div>
-                <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Missing (P?)</span><span className="text-xl font-black text-orange-500">{activeEmp.pMiss}</span></div>
-                <div className="flex flex-col"><span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Total OT</span><span className="text-xl font-black text-brand-600">{activeEmp.otHrs}h</span></div>
+            <div className="mt-4 d-flex flex-wrap gap-4 border-top border-slate-100 pt-3">
+                <div className="d-flex flex-column"><span className="fs-8 font-black text-slate-400 text-uppercase tracking-widest mb-1">Working Days</span><span className="h4 font-black text-slate-800 m-0">{activeEmp.workingDays}</span></div>
+                <div className="d-flex flex-column"><span className="fs-8 font-black text-slate-400 text-uppercase tracking-widest mb-1">Present (P)</span><span className="h4 font-black text-success m-0">{activeEmp.pOnly}</span></div>
+                <div className="d-flex flex-column"><span className="fs-8 font-black text-slate-400 text-uppercase tracking-widest mb-1">Missing (P?)</span><span className="h4 font-black text-warning m-0">{activeEmp.pMiss}</span></div>
+                <div className="d-flex flex-column"><span className="fs-8 font-black text-slate-400 text-uppercase tracking-widest mb-1">Total OT</span><span className="h4 font-black text-brand-600 m-0">{activeEmp.otHrs}h</span></div>
             </div>
 
-            <div className="grid grid-cols-5 gap-4 mt-6">
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 relative group">
-                    <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Basic Salary</div>
-                    <div className="flex items-center"><span className="text-slate-400 font-bold mr-1">₹</span><input type="number" value={activeEmp.basicSalary || ""} onChange={e => updateActive({basicSalary: e.target.value})} className="text-xl font-black text-slate-800 bg-transparent outline-none w-full border-b border-transparent focus:border-brand-400 transition" /></div>
+            <div className="row g-2 mt-4">
+                <div className="col-6 col-md-3">
+                    <div className="bg-slate-50 p-3 rounded-3 border">
+                        <div className="fs-8 font-black text-slate-400 text-uppercase tracking-widest mb-1">Basic Salary</div>
+                        <div className="d-flex align-items-center"><span className="text-slate-400 font-bold me-1">₹</span><input type="number" value={activeEmp.basicSalary || ""} onChange={e => updateActive({basicSalary: e.target.value})} className="form-control form-control-sm border-0 border-bottom bg-transparent font-black text-slate-800 p-0 fs-5 rounded-0" style={{ outline: 'none', boxShadow: 'none' }} /></div>
+                    </div>
                 </div>
-                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                    <div className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest mb-1">Earned Pay</div>
-                    <div className="text-xl font-black text-emerald-900 flex items-center"><span className="text-emerald-500 font-bold mr-1">₹</span>{activeEmp.actualMonthly.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                <div className="col-6 col-md-2">
+                    <div className="bg-success bg-opacity-10 p-3 rounded-3 border h-100 d-flex flex-column justify-content-center">
+                        <div className="fs-8 font-black text-success text-uppercase tracking-widest mb-1">Earned Pay</div>
+                        <div className="h5 font-black text-success m-0">₹{activeEmp.actualMonthly.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                    </div>
                 </div>
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Prev Balance</div>
-                    <div className="flex items-center"><span className="text-slate-400 font-bold mr-1">₹</span><input type="number" value={activeEmp.previousBalance || ""} onChange={e => updateActive({previousBalance: e.target.value})} className="text-xl font-black text-slate-800 bg-transparent outline-none w-full border-b border-transparent focus:border-brand-400 transition" /></div>
+                <div className="col-6 col-md-2">
+                    <div className="bg-slate-50 p-3 rounded-3 border">
+                        <div className="fs-8 font-black text-slate-400 text-uppercase tracking-widest mb-1">Prev Balance</div>
+                        <div className="d-flex align-items-center"><span className="text-slate-400 font-bold me-1">₹</span><input type="number" value={activeEmp.previousBalance || ""} onChange={e => updateActive({previousBalance: e.target.value})} className="form-control form-control-sm border-0 border-bottom bg-transparent font-black text-slate-800 p-0 fs-5 rounded-0" style={{ outline: 'none', boxShadow: 'none' }} /></div>
+                    </div>
                 </div>
-                <div className="bg-rose-50 p-4 rounded-xl border border-rose-100">
-                    <div className="text-[10px] font-extrabold text-rose-500 uppercase tracking-widest mb-1">Advance Deduct</div>
-                    <div className="flex items-center"><span className="text-rose-400 font-bold mr-1">₹</span><input type="number" value={activeEmp.advance || ""} onChange={e => updateActive({advance: e.target.value})} className="text-xl font-black text-rose-900 bg-transparent outline-none w-full border-b border-transparent focus:border-rose-400 transition" /></div>
+                <div className="col-6 col-md-2">
+                    <div className="bg-danger bg-opacity-10 p-3 rounded-3 border">
+                        <div className="fs-8 font-black text-danger text-uppercase tracking-widest mb-1">Advance Deduct</div>
+                        <div className="d-flex align-items-center"><span className="text-danger font-bold me-1">₹</span><input type="number" value={activeEmp.advance || ""} onChange={e => updateActive({advance: e.target.value})} className="form-control form-control-sm border-0 border-bottom bg-transparent font-black text-danger p-0 fs-5 rounded-0" style={{ outline: 'none', boxShadow: 'none' }} /></div>
+                    </div>
                 </div>
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl shadow-lg shadow-slate-900/20 text-white flex flex-col justify-between">
-                    <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Final Payout</div>
-                    <div className="text-2xl font-black text-white flex items-center"><span className="text-slate-500 font-bold mr-1">₹</span>{activeEmp.salaryToBePaid.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                <div className="col-12 col-md-3">
+                    <div className="bg-dark p-3 rounded-3 text-white h-100 d-flex flex-column justify-content-center">
+                        <div className="fs-8 font-black text-slate-400 text-uppercase tracking-widest mb-1">Final Payout</div>
+                        <div className="h4 font-black text-white m-0">₹{activeEmp.salaryToBePaid.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 bg-slate-50 relative" onClick={() => { if(!focusDay) setFocusDay(1); }}>
-            <div className="flex flex-col gap-4 mb-6">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight">{activeConf.label} Register</h3>
-                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm text-[11px] font-bold text-slate-600">
-                        <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm text-brand-600">P</kbd> Prs (Triggers Time)</span>
-                        <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">A</kbd> Abs</span>
-                        <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">H</kbd> Half</span>
-                        <span className="flex items-center gap-1"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">T</kbd> Tour</span>
-                        <span className="flex items-center gap-1 ml-2"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm">O</kbd> OT</span>
-                        <span className="flex items-center gap-1 ml-2"><kbd className="bg-slate-100 border border-slate-300 rounded px-1 shadow-sm text-base leading-none">⌫</kbd> Clr</span>
+        <div className="flex-grow-1 overflow-y-auto p-4 bg-slate-50 relative" onClick={() => { if(!focusDay) setFocusDay(1); }}>
+            <div className="d-flex flex-column gap-3 mb-4">
+                <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <h3 className="h5 font-black text-slate-800 m-0">{activeConf.label} Register</h3>
+                    <div className="d-flex align-items-center gap-2 bg-white px-3 py-2 rounded-3 border shadow-sm fs-8 font-bold text-slate-600 flex-wrap">
+                        <span><kbd className="bg-slate-100 text-dark border rounded px-1 me-1 shadow-sm font-black">P</kbd> Prs (Triggers Time)</span>
+                        <span><kbd className="bg-slate-100 text-dark border rounded px-1 me-1 shadow-sm font-black">A</kbd> Abs</span>
+                        <span><kbd className="bg-slate-100 text-dark border rounded px-1 me-1 shadow-sm font-black">H</kbd> Half</span>
+                        <span><kbd className="bg-slate-100 text-dark border rounded px-1 me-1 shadow-sm font-black">T</kbd> Tour</span>
+                        <span><kbd className="bg-slate-100 text-dark border rounded px-1 me-1 shadow-sm font-black">O</kbd> OT</span>
+                        <span><kbd className="bg-slate-100 text-dark border rounded px-1 me-1 shadow-sm font-black">⌫</kbd> Clr</span>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-3 pb-24">
-                {DAY_NAMES.map(d => <div key={d} className="text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">{d}</div>)}
+            <div className="calendar-grid pb-5">
+                {DAY_NAMES.map(d => <div key={d} className="text-center fs-8 font-black text-slate-400 text-uppercase tracking-widest">{d}</div>)}
                 {Array.from({ length: activeConf.startOffset }).map((_, i) => <div key={`empty-${i}`} className="opacity-0"></div>)}
                 {Array.from({ length: activeConf.days }, (_, i) => {
                     const dNum = i + 1;
@@ -1430,28 +1802,28 @@ return (
                     const cColor = getAttColor(aVal);
 
                     return (
-                        <div id={`day-${dNum}`} key={dNum} tabIndex={0} onClick={() => setFocusDay(dNum)} className={`day-card relative h-28 rounded-2xl border-2 cursor-pointer flex flex-col p-2 bg-white ${focusDay === dNum ? 'border-brand-500 shadow-md ring-4 ring-brand-500/20' : 'border-slate-200 hover:border-slate-300'} ${isWk && !aVal ? 'bg-amber-50' : ''}`}>
-                            <span className={`absolute top-2 left-3 text-sm font-black ${isWk ? 'text-amber-500' : 'text-slate-400'}`}>{dNum}</span>
+                        <div id={`day-${dNum}`} key={dNum} tabIndex={0} onClick={() => setFocusDay(dNum)} className={`day-card position-relative rounded-3 border d-flex flex-column p-2 bg-white ${focusDay === dNum ? 'border-brand-500 ring-4 ring-brand-500/20' : 'border-slate-200'} ${isWk && !aVal ? 'bg-warning bg-opacity-10' : ''}`}>
+                            <span className={`position-absolute top-0 start-0 m-2 fs-7 font-black ${isWk ? 'text-warning' : 'text-slate-400'}`}>{dNum}</span>
                             {cVal && (
-                                <div className="absolute top-2 right-2 text-brand-500 bg-brand-50 hover:bg-brand-100 transition p-1 rounded-md z-20 cursor-pointer shadow-sm" title={cVal} onClick={(e) => { e.stopPropagation(); setFocusDay(dNum); setCommentModal({ show: true, day: dNum, val: cVal }); }}>
-                                    <Icon path="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" className="w-3.5 h-3.5"/>
+                                <div className="position-absolute top-0 end-0 m-2 text-brand-500 bg-brand-50 p-1 rounded-2 z-2 cursor-pointer shadow-sm" title={cVal} onClick={(e) => { e.stopPropagation(); setFocusDay(dNum); setCommentModal({ show: true, day: dNum, val: cVal }); }}>
+                                    <Icon path="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" className="w-100 h-100"/>
                                 </div>
                             )}
                             
-                            <div className="flex-1 flex flex-col items-center justify-center mt-3 gap-1">
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm border-2 ${cColor} ${isAutoWo ? 'opacity-70 border-dashed bg-transparent text-purple-500 border-purple-400' : ''}`}>{aVal || '-'}</div>
-                                    {oVal && <div className={`px-1.5 py-0.5 rounded border text-[10px] font-black ${parseFloat(oVal) < 0 ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-brand-100 text-brand-700 border-brand-200'}`}>{oVal}h</div>}
+                            <div className="flex-grow-1 d-flex flex-column align-items-center justify-content-center mt-2 gap-1">
+                                <div className="d-flex align-items-center gap-2">
+                                    <div className={`rounded-3 d-flex align-items-center justify-content-center font-black fs-7 border-2 ${cColor} ${isAutoWo ? 'opacity-70 border-dashed bg-transparent text-secondary border-secondary' : ''}`} style={{ width: '34px', height: '34px' }}>{aVal || '-'}</div>
+                                    {oVal && <div className={`px-1.5 py-0.5 rounded border fs-8 font-black ${parseFloat(oVal) < 0 ? 'bg-danger bg-opacity-10 text-danger border-danger' : 'bg-brand-100 text-brand-700 border-brand-200'}`}>{oVal}h</div>}
                                 </div>
                                 
                                 {(inVal || outVal) && (
-                                    <div className="text-[9px] font-bold text-slate-500 mt-1 leading-tight text-center">
-                                        {inVal && <div className="text-emerald-600">↑ {inVal}</div>}
-                                        {outVal && <div className="text-rose-600">↓ {outVal}</div>}
+                                    <div className="fs-8 font-bold text-slate-500 mt-1 leading-tight text-center">
+                                        {inVal && <div className="text-success">↑ {inVal}</div>}
+                                        {outVal && <div className="text-danger">↓ {outVal}</div>}
                                     </div>
                                 )}
                             </div>
-                            {getsExtraWo && <div className="absolute bottom-1 left-0 right-0 flex justify-center"><span className="text-[8px] font-black uppercase text-purple-500 bg-purple-50 px-1 rounded-sm">+ W/O</span></div>}
+                            {getsExtraWo && <div className="position-absolute bottom-0 start-0 end-0 text-center pb-1"><span className="fs-8 font-black text-uppercase text-secondary bg-light px-1 rounded border">+ W/O</span></div>}
                         </div>
                     );
                 })}
@@ -1461,165 +1833,172 @@ return (
 )}
 </div>
 
-{/* TIME SELECTION MODAL (BUBBLE) */}
 {timeModal.show && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 w-[600px] transform transition-all scale-100 relative overflow-hidden">
-            <button onClick={() => setTimeModal({...timeModal, show: false})} className="absolute top-4 right-4 p-1 rounded hover:bg-slate-100 text-slate-400 transition">
-                <Icon path="M6 18L18 6M6 6l12 12" className="w-6 h-6"/>
-            </button>
+    <div className="custom-modal-overlay">
+        <div className="bg-white rounded-3 p-4 shadow-lg position-relative" style={{ width: '100%', maxWidth: '600px' }}>
+            <button onClick={() => setTimeModal({...timeModal, show: false})} className="btn btn-close position-absolute top-0 end-0 m-3"></button>
             
-            <div className="mb-6 flex items-center justify-between pr-8 border-b border-slate-100 pb-4">
-                <div>
-                    <h3 className={`text-2xl font-black tracking-tight flex items-center gap-2 ${timeModal.step === 'in' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {timeModal.step === 'in' ? <Icon path="M5 10l7-7m0 0l7 7m-7-7v18" className="w-6 h-6"/> : <Icon path="M19 14l-7 7m0 0l-7-7m7 7V3" className="w-6 h-6"/>}
-                        {timeModal.step === 'in' ? 'Select Clock IN Time' : 'Select Clock OUT Time'}
-                    </h3>
-                    <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">{activeEmp?.name} • Day {timeModal.day}</p>
-                </div>
+            <div className="mb-4 pb-2 border-bottom">
+                <h3 className={`h4 font-black d-flex align-items-center gap-2 m-0 ${timeModal.step === 'in' ? 'text-success' : 'text-danger'}`}>
+                    {timeModal.step === 'in' ? <Icon path="M5 10l7-7m0 0l7 7m-7-7v18" /> : <Icon path="M19 14l-7 7m0 0l-7-7m7 7V3" />}
+                    {timeModal.step === 'in' ? 'Select Clock IN Time' : 'Select Clock OUT Time'}
+                </h3>
+                <p className="fs-8 text-slate-500 font-bold text-uppercase tracking-widest mt-1 m-0">{activeEmp?.name} • Day {timeModal.day}</p>
             </div>
 
-            {/* Quick Suggestions Row */}
-            <div className="mb-5">
-                <h4 className="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Common {timeModal.step === 'in' ? 'IN' : 'OUT'} Times</h4>
-                <div className="grid grid-cols-4 gap-3">
+            <div className="mb-4">
+                <h4 className="fs-8 font-black text-slate-400 mb-2 text-uppercase tracking-widest">Common {timeModal.step === 'in' ? 'IN' : 'OUT'} Times</h4>
+                <div className="row g-2">
                     {(timeModal.step === 'in' ? SUGGESTED_IN_TIMES : SUGGESTED_OUT_TIMES).map((timeStr, idx) => (
-                        <button 
-                            key={idx} 
-                            onClick={() => handleTimeSelect(timeStr)}
-                            className={`py-3 rounded-xl font-black text-sm transition-all border-2 shadow-sm ${
-                                timeModal.step === 'in' 
-                                ? 'bg-emerald-100 border-emerald-300 text-emerald-800 hover:bg-emerald-500 hover:text-white hover:border-emerald-500' 
-                                : 'bg-rose-100 border-rose-300 text-rose-800 hover:bg-rose-500 hover:text-white hover:border-rose-500'
-                            }`}
-                        >
-                            {timeStr}
-                        </button>
+                        <div className="col-6 col-md-3" key={idx}>
+                            <button 
+                                onClick={() => handleTimeSelect(timeStr)}
+                                className={`btn py-2.5 w-100 font-black fs-7 shadow-sm border-2 ${
+                                    timeModal.step === 'in' 
+                                    ? 'btn-success text-white border-success' 
+                                    : 'btn-danger text-white border-danger'
+                                }`}
+                            >
+                                {timeStr}
+                            </button>
+                        </div>
                     ))}
                 </div>
             </div>
 
-            <h4 className="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest border-t border-slate-100 pt-4">All Time Options</h4>
-            <div className="grid grid-cols-5 gap-2 max-h-56 overflow-y-auto p-1 mb-4 time-grid">
+            <h4 className="fs-8 font-black text-slate-400 mb-2 text-uppercase tracking-widest border-top pt-3">All Time Options</h4>
+            <div className="row g-1 max-h-56 overflow-y-auto mb-4 time-grid" style={{ maxHeight: '200px' }}>
                 {(timeModal.step === 'in' ? inTimeOptions : outTimeOptions).map((timeStr, idx) => (
-                    <button 
-                        key={idx} 
-                        onClick={() => handleTimeSelect(timeStr)}
-                        className={`text-xs py-2.5 rounded-lg border transition-all ${getTimeBtnClass(timeStr, timeModal.step)}`}
-                    >
-                        {timeStr}
-                    </button>
+                    <div className="col-4 col-md-3 col-lg-2.4 p-1" key={idx}>
+                        <button 
+                            onClick={() => handleTimeSelect(timeStr)}
+                            className={`btn btn-sm w-100 py-2 fs-8 font-bold ${getTimeBtnClass(timeStr, timeModal.step)}`}
+                        >
+                            {timeStr}
+                        </button>
+                    </div>
                 ))}
             </div>
 
-            <div className="flex items-center gap-3 border-t border-slate-100 pt-4 bg-slate-50 -mx-6 -mb-6 px-6 pb-6">
-                <div className="flex-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Or Enter Custom Minutes</p>
+            <div className="row g-3 align-items-end pt-3 border-top bg-light -mx-4 -mb-4 p-4 rounded-bottom-3">
+                <div className="col">
+                    <p className="fs-8 font-black text-slate-400 text-uppercase tracking-widest mb-1.5">Or Enter Custom Minutes</p>
                     <input 
                         type="time" 
                         value={timeModal.custom}
                         onChange={(e) => setTimeModal({...timeModal, custom: e.target.value})}
-                        className={`w-full bg-white border-2 rounded-lg px-4 py-3 text-sm font-black text-slate-700 outline-none transition shadow-sm ${timeModal.step === 'in' ? 'focus:border-emerald-500' : 'focus:border-rose-500'}`}
+                        className="form-control form-control-lg font-black text-slate-700 shadow-sm"
                     />
                 </div>
-                <button 
-                    onClick={handleTimeCustomSave} 
-                    className={`self-end font-black text-sm px-6 py-3 rounded-lg shadow-lg transition text-white ${timeModal.step === 'in' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/30'}`}
-                >
-                    Save Custom
-                </button>
+                <div className="col-auto">
+                    <button 
+                        onClick={handleTimeCustomSave} 
+                        className={`btn btn-lg font-black fs-7 px-4 shadow ${timeModal.step === 'in' ? 'btn-success' : 'btn-danger'}`}
+                    >
+                        Save Custom
+                    </button>
+                </div>
             </div>
             
-            <button onClick={() => setTimeModal({...timeModal, show: false})} className="absolute bottom-6 right-6 text-xs font-bold text-slate-400 hover:text-slate-600 hover:underline">Skip Time Selection</button>
+            <button onClick={() => setTimeModal({...timeModal, show: false})} className="btn btn-link p-0 text-decoration-none fs-8 font-bold text-muted mt-3 d-block">Skip Time Selection</button>
         </div>
     </div>
 )}
 
-{/* OTHER MODALS */}
 {pdfModal.show && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 w-[450px] transform transition-all scale-100">
-            <h3 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Icon path="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" className="text-rose-500"/> 
+    <div className="custom-modal-overlay">
+        <div className="bg-white rounded-3 p-4 shadow-lg" style={{ width: '100%', maxWidth: '450px' }}>
+            <h3 className="h5 font-black text-slate-800 mb-4 d-flex align-items-center gap-2 border-bottom pb-2">
+                <Icon path="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" className="text-danger"/> 
                 Configure Verification Print
             </h3>
             
-            <div className="mb-5 bg-slate-50 border border-slate-200 p-4 rounded-xl">
-                <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" checked={pdfModal.hideBasic} onChange={e => setPdfModal({...pdfModal, hideBasic: e.target.checked})} className="w-5 h-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-                    <div>
-                        <div className="text-sm font-bold text-slate-800">Hide Basic Salary</div>
-                        <div className="text-[10px] font-bold text-slate-400 mt-0.5">Omit base pay column from the PDF print</div>
-                    </div>
-                </label>
+            <div className="mb-4 bg-light border p-3 rounded-3">
+                <div className="form-check d-flex align-items-start gap-2">
+                    <input type="checkbox" checked={pdfModal.hideBasic} onChange={e => setPdfModal({...pdfModal, hideBasic: e.target.checked})} className="form-check-input mt-1" id="hideBasicCheck" />
+                    <label className="form-check-label" htmlFor="hideBasicCheck">
+                        <div className="fs-7 font-bold text-slate-800">Hide Basic Salary</div>
+                        <div className="fs-8 text-slate-400 mt-0.5">Omit base pay column from the PDF print</div>
+                    </label>
+                </div>
             </div>
 
-            <div className="mb-6">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Icon path="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" className="w-3.5 h-3.5"/> Signature Authorities</h4>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Prepared By</label>
-                        <input type="text" value={pdfSigs.prep} onChange={e => setPdfSigs({...pdfSigs, prep: e.target.value.toUpperCase()})} className="w-full text-xs font-bold text-slate-800 p-2 border border-slate-200 rounded outline-none focus:border-brand-500 uppercase"/>
+            <div className="mb-4">
+                <h4 className="fs-8 font-black text-slate-400 text-uppercase tracking-widest mb-3 d-flex align-items-center gap-2"><Icon path="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /> Signature Authorities</h4>
+                <div className="row g-2">
+                    <div className="col-6">
+                        <label className="fs-8 font-bold text-slate-500 mb-1 d-block">Prepared By</label>
+                        <input type="text" value={pdfSigs.prep} onChange={e => setPdfSigs({...pdfSigs, prep: e.target.value.toUpperCase()})} className="form-control form-control-sm text-uppercase font-bold text-slate-800"/>
                     </div>
-                    <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Rechecked By</label>
-                        <input type="text" value={pdfSigs.rech} onChange={e => setPdfSigs({...pdfSigs, rech: e.target.value.toUpperCase()})} className="w-full text-xs font-bold text-slate-800 p-2 border border-slate-200 rounded outline-none focus:border-brand-500 uppercase"/>
+                    <div className="col-6">
+                        <label className="fs-8 font-bold text-slate-500 mb-1 d-block">Rechecked By</label>
+                        <input type="text" value={pdfSigs.rech} onChange={e => setPdfSigs({...pdfSigs, rech: e.target.value.toUpperCase()})} className="form-control form-control-sm text-uppercase font-bold text-slate-800"/>
                     </div>
-                    <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Verified By</label>
-                        <input type="text" value={pdfSigs.ver} onChange={e => setPdfSigs({...pdfSigs, ver: e.target.value.toUpperCase()})} className="w-full text-xs font-bold text-slate-800 p-2 border border-slate-200 rounded outline-none focus:border-brand-500 uppercase"/>
+                    <div className="col-6">
+                        <label className="fs-8 font-bold text-slate-500 mb-1 d-block">Verified By</label>
+                        <input type="text" value={pdfSigs.ver} onChange={e => setPdfSigs({...pdfSigs, ver: e.target.value.toUpperCase()})} className="form-control form-control-sm text-uppercase font-bold text-slate-800"/>
                     </div>
-                    <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Final Approval</label>
-                        <input type="text" value={pdfSigs.app} onChange={e => setPdfSigs({...pdfSigs, app: e.target.value.toUpperCase()})} className="w-full text-xs font-bold text-slate-800 p-2 border border-slate-200 rounded outline-none focus:border-brand-500 uppercase"/>
+                    <div className="col-6">
+                        <label className="fs-8 font-bold text-slate-500 mb-1 d-block">Final Approval</label>
+                        <input type="text" value={pdfSigs.app} onChange={e => setPdfSigs({...pdfSigs, app: e.target.value.toUpperCase()})} className="form-control form-control-sm text-uppercase font-bold text-slate-800"/>
                     </div>
                 </div>
             </div>
 
-            <div className="flex gap-2 justify-end pt-2">
-                <button onClick={() => setPdfModal({...pdfModal, show:false})} className="px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100 transition">Cancel</button>
-                <button onClick={executePDFExport} className="px-6 py-2 rounded-lg font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-500/30 transition flex items-center gap-2"><Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" className="w-4 h-4"/> Generate PDF</button>
+            <div className="d-flex gap-2 justify-content-end">
+                <button onClick={() => setPdfModal({...pdfModal, show:false})} className="btn btn-sm btn-light font-bold text-slate-500">Cancel</button>
+                <button onClick={executePDFExport} className="btn btn-sm btn-danger font-bold d-flex align-items-center gap-1.5 shadow">
+                    <Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /> Generate PDF
+                </button>
             </div>
         </div>
     </div>
 )}
 
 {otModal.show && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 w-80 transform transition-all scale-100">
-            <h3 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2"><Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" className="text-brand-500"/> Day {otModal.day} Overtime/Penalty</h3>
-            <div className="mb-6">
-                <input type="number" step="0.5" ref={otInputRef} value={otModal.val} onChange={e => setOtModal({...otModal, val: e.target.value})} onKeyDown={e => { if(e.key === 'Enter') updateOt(otModal.day, otModal.val); }} className="w-full text-center text-4xl font-black text-slate-800 bg-slate-50 border-2 border-slate-200 rounded-xl py-4 outline-none focus:border-brand-500 focus:bg-white transition" placeholder="0.0" />
-                <p className="text-center text-xs font-bold text-slate-400 mt-2">Use negative (-) for penalty</p>
+    <div className="custom-modal-overlay">
+        <div className="bg-white rounded-3 p-4 shadow-lg text-center" style={{ width: '100%', maxWidth: '320px' }}>
+            <h3 className="h6 font-black text-slate-800 mb-3 d-flex align-items-center justify-content-center gap-2">
+                <Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" className="text-brand-500"/> Day {otModal.day} Overtime/Penalty
+            </h3>
+            <div className="mb-4">
+                <input type="number" step="0.5" ref={otInputRef} value={otModal.val} onChange={e => setOtModal({...otModal, val: e.target.value})} onKeyDown={e => { if(e.key === 'Enter') updateOt(otModal.day, otModal.val); }} className="form-control form-control-lg text-center font-black text-slate-800 bg-light border-2 py-3" placeholder="0.0" />
+                <p className="fs-8 font-bold text-slate-400 mt-2 m-0">Use negative (-) for penalty</p>
             </div>
-            <div className="flex gap-2 justify-end">
-                <button onClick={() => setOtModal({...otModal, show:false})} className="px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100 transition">Cancel</button>
-                <button onClick={() => updateOt(otModal.day, otModal.val)} className="px-6 py-2 rounded-lg font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/30 transition">Save OT</button>
+            <div className="d-flex gap-2 justify-content-center">
+                <button onClick={() => setOtModal({...otModal, show:false})} className="btn btn-sm btn-light font-bold text-slate-500">Cancel</button>
+                <button onClick={() => updateOt(otModal.day, otModal.val)} className="btn btn-sm btn-primary font-bold shadow">Save OT</button>
             </div>
         </div>
     </div>
 )}
 
 {commentModal.show && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 w-96 transform transition-all scale-100">
-            <h3 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2"><Icon path="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" className="text-brand-500"/> Date Comment - Day {commentModal.day}</h3>
-            <div className="mb-6">
-                <textarea ref={commentInputRef} value={commentModal.val} onChange={e => setCommentModal({...commentModal, val: e.target.value})} className="w-full text-sm font-medium text-slate-800 bg-slate-50 border-2 border-slate-200 rounded-xl p-4 outline-none focus:border-brand-500 focus:bg-white transition resize-none h-32" placeholder="Add a comment about this day (e.g. Missing punch time, Late by 1 hr, etc...)" />
+    <div className="custom-modal-overlay">
+        <div className="bg-white rounded-3 p-4 shadow-lg" style={{ width: '100%', maxWidth: '380px' }}>
+            <h3 className="h6 font-black text-slate-800 mb-3 d-flex align-items-center gap-2">
+                <Icon path="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" className="text-brand-500"/> Date Comment - Day {commentModal.day}
+            </h3>
+            <div className="mb-4">
+                <textarea ref={commentInputRef} value={commentModal.val} onChange={e => setCommentModal({...commentModal, val: e.target.value})} className="form-control text-slate-800 bg-light border-2 p-3" style={{ resize: 'none', height: '120px' }} placeholder="Add a comment about this day (e.g. Missing punch time, Late by 1 hr, etc...)" />
             </div>
-            <div className="flex gap-2 justify-end">
-                <button onClick={() => setCommentModal({...commentModal, show:false})} className="px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100 transition">Cancel</button>
-                <button onClick={() => updateComment(commentModal.day, commentModal.val)} className="px-6 py-2 rounded-lg font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/30 transition">Save Note</button>
+            <div className="d-flex gap-2 justify-content-end">
+                <button onClick={() => setCommentModal({...commentModal, show:false})} className="btn btn-sm btn-light font-bold text-slate-500">Cancel</button>
+                <button onClick={() => updateComment(commentModal.day, commentModal.val)} className="btn btn-sm btn-primary font-bold shadow">Save Note</button>
             </div>
         </div>
     </div>
 )}
 
 {toast && (
-    <div className="fixed bottom-6 right-6 z-50">
-        <div className={`px-6 py-4 rounded-xl shadow-2xl font-bold flex items-center gap-3 text-white ${toast.type === 'error' ? 'bg-rose-500' : 'bg-slate-800'}`}>
-            <Icon path={toast.type==='error'?"M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z":"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"} />
-            {toast.msg}
+    <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1100 }}>
+        <div className={`toast show align-items-center border-0 text-white p-2 ${toast.type === 'error' ? 'bg-danger' : 'bg-dark'}`} role="alert" aria-live="assertive" aria-atomic="true">
+            <div className="d-flex">
+                <div className="toast-body d-flex align-items-center gap-2 font-bold fs-7">
+                    <Icon path={toast.type==='error'?"M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z":"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"} />
+                    {toast.msg}
+                </div>
+            </div>
         </div>
     </div>
 )}
